@@ -60,7 +60,7 @@ export default function RegisterPage() {
 
       if (error) throw error
 
-      alert("Registrasi berhasil! Silakan cek email Anda untuk verifikasi.")
+      alert("Registrasi akun berhasil! Silakan login.")
       router.push("/login")
     } catch (error: any) {
       setError(error.message || "Registrasi gagal")
