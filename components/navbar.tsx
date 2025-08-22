@@ -48,14 +48,16 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Image
-              src="/images/uiso-logo.png"
-              alt="UISO 2025 Logo"
-              width={40}
-              height={40}
-              className="w-10 h-10 object-contain"
-            />
-            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent font-bold text-xl">
+            <Link href="/" passHref>
+              <Image
+                src="/images/uiso-logo.png"
+                alt="UISO 2025 Logo"
+                width={40}
+                height={40}
+                className="w-10 h-10 object-contain cursor-pointer"
+              />
+            </Link>
+            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent font-bold text-2xl">
               UISO 2025
             </span>
           </div>
