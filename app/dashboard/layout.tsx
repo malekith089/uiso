@@ -14,11 +14,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Home, FileText, Upload, Menu, LogOut, Settings, User, Bell } from "lucide-react"
+import { Home, FileText, Upload, Menu, LogOut } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { signOut } from "next-auth/react";
 
 const sidebarItems = [
   {
@@ -81,8 +82,7 @@ export default function DashboardLayout({
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push("/login")
+    await signOut({ redirect: true, callbackUrl: "/login" });
   }
 
   if (loading) {
@@ -196,12 +196,6 @@ export default function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Notifications */}
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs"></span>
-            </Button>
-
             {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -224,15 +218,6 @@ export default function DashboardLayout({
                     <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
