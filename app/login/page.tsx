@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
 import Image from "next/image"
-import { signIn } from "next-auth/react"
+import { signIn, getSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
@@ -37,18 +36,22 @@ export default function LoginPage() {
 
       if (result?.error) {
         setError("Email atau password salah")
-      } else {
-        const response = await fetch("/api/auth/session")
-        const session = await response.json()
-
+      } else if (result?.ok) {
+        // Get the session to check user role
+        const session = await getSession()
+        
         if (session?.user?.role === "admin") {
           router.push("/admin")
         } else {
           router.push("/dashboard")
         }
+        
+        // Force page refresh to update auth state
+        router.refresh()
       }
     } catch (error: any) {
-      setError("Login failed")
+      console.error("Login error:", error)
+      setError("Terjadi kesalahan saat login")
     } finally {
       setIsLoading(false)
     }

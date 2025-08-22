@@ -1,60 +1,128 @@
 import NextAuth from "next-auth";
 import type { NextAuthConfig } from 'next-auth';
-import Google from "next-auth/providers/google";
-import { createSupabaseAdapter } from "@next-auth/supabase-adapter";
+import Credentials from "next-auth/providers/credentials";
+import { createClient } from "@/lib/supabase/server";
 
 /**
- * This is the single source of truth for your NextAuth.js configuration.
- * By consolidating it here, we ensure that the middleware and API routes
- * use the exact same logic and prevent Edge runtime compatibility issues.
+ * NextAuth.js configuration for email/password authentication only
  */
 const authOptions: NextAuthConfig = {
-  // Specify custom pages to override the default NextAuth.js pages.
   pages: {
     signIn: '/login',
   },
-  // Callbacks are asynchronous functions you can use to control what happens
-  // when an action is performed.
+  
   callbacks: {
-    /**
-     * The `authorized` callback is used to verify if a request is authorized.
-     * It's called by the middleware.
-     * @param {object} auth - The user's session object.
-     * @param {object} request - The incoming request.
-     * @returns {boolean | Response} - Return true to continue, false to redirect, or a Response object.
-     */
-    authorized({ auth, request: { nextUrl } }) {
+    authorized({ auth, request }) {
+      const { nextUrl } = request;
       const isLoggedIn = !!auth?.user;
       const isProtectedPath = nextUrl.pathname.startsWith('/dashboard') || nextUrl.pathname.startsWith('/admin');
 
       if (isProtectedPath) {
-        if (isLoggedIn) return true; // Allow access if the user is logged in
-        return false; // Redirect unauthenticated users to the login page
+        if (isLoggedIn) return true;
+        return false; // Redirect to login
       } else if (isLoggedIn) {
-        // If the user is logged in and tries to access public pages like login/register,
-        // redirect them to the dashboard.
+        // Redirect logged-in users away from auth pages
         const isPublicAuthPath = nextUrl.pathname.startsWith('/login') || nextUrl.pathname.startsWith('/register');
         if (isPublicAuthPath) {
-            return Response.redirect(new URL('/dashboard', nextUrl));
+          return Response.redirect(new URL('/dashboard', nextUrl));
         }
       }
-      // Allow all other requests by default
       return true;
     },
+    
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.sub!;
+        session.user.role = token.role as string || 'user';
+        session.user.school = token.school as string || '';
+        session.user.education_level = token.education_level as string || '';
+        session.user.identity_number = token.identity_number as string || '';
+      }
+      return session;
+    },
+    
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role;
+        token.school = user.school;
+        token.education_level = user.education_level;
+        token.identity_number = user.identity_number;
+      }
+      return token;
+    }
   },
-  // Configure one or more authentication providers.
+  
   providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
+    Credentials({
+      name: "credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
+        try {
+          const supabase = await createClient();
+          
+          // Sign in with Supabase Auth
+          const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email: credentials.email as string,
+            password: credentials.password as string,
+          });
+
+          if (authError || !authData.user) {
+            console.error('Auth error:', authError);
+            return null;
+          }
+
+          // Get additional user data from your custom table (if you have one)
+          // If you store additional user info in a separate table
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', authData.user.id)
+            .single();
+
+          // If you don't have a profiles table, you can use the auth user data directly
+          if (profileError) {
+            console.log('No profile found, using auth data only');
+            return {
+              id: authData.user.id,
+              email: authData.user.email!,
+              name: authData.user.user_metadata?.full_name || authData.user.email!,
+              role: 'user',
+              school: '',
+              education_level: '',
+              identity_number: '',
+            };
+          }
+
+          return {
+            id: authData.user.id,
+            email: authData.user.email!,
+            name: profile?.full_name || authData.user.email!,
+            role: profile?.role || 'user',
+            school: profile?.school_institution || '',
+            education_level: profile?.education_level || '',
+            identity_number: profile?.identity_number || '',
+          };
+        } catch (error) {
+          console.error('Authorization error:', error);
+          return null;
+        }
+      }
+    })
   ],
-  // The Supabase adapter allows you to use Supabase as your database for NextAuth.js.
-  adapter: createSupabaseAdapter({
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  }),
+  
+  session: {
+    strategy: "jwt",
+  },
+  
+  // Remove adapter if you want to rely purely on Supabase Auth without NextAuth database
+  // adapter: undefined,
 };
 
-// Export the handlers, auth, signIn, and signOut functions.
 export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);
