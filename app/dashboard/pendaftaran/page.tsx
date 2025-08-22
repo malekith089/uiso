@@ -235,7 +235,7 @@ export default function PendaftaranPage() {
           <p className="text-gray-600">Daftar kompetisi UISO 2025 sesuai jenjang pendidikan Anda</p>
         </div>
         <Badge variant="outline" className="text-sm">
-          Role: {userProfile?.education_level}
+          Jenjang: {userProfile?.education_level}
         </Badge>
       </div>
 
