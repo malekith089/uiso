@@ -1,51 +1,72 @@
 export function TimelineSection() {
   const timelineEvents = [
     {
-      date: "1 Januari 2025",
+      date: "14 Agustus – 16 Oktober 2025",
+      title: "Roadshow",
+      description: "Roadshow UI Science Olympiad 2025",
+    },
+    {
+      date: "23 Agustus 2025",
       title: "Pembukaan Pendaftaran",
-      description: "Pendaftaran resmi dibuka untuk seluruh kategori kompetisi UISO 2025",
+      description: "Pembukaan resmi pendaftaran UI Science Olympiad 2025.",
     },
     {
-      date: "15 Januari 2025",
-      title: "Roadshow Dimulai",
-      description: "Kunjungan ke sekolah-sekolah di berbagai kota untuk sosialisasi dan workshop",
-    },
-    {
-      date: "28 Februari 2025",
+      date: "17 Oktober 2025",
       title: "Penutupan Pendaftaran",
-      description: "Batas akhir pendaftaran untuk semua kategori kompetisi",
+      description: "Batas akhir pendaftaran UI Science Olympiad 2025.",
     },
     {
-      date: "1 Maret 2025",
-      title: "Grand Opening",
-      description: "Pembukaan resmi UISO 2025 dengan webinar inspiratif",
+      date: "19 Oktober 2025",
+      title: "Grand Opening & Technical Meeting 1",
+      description: "Grand Opening UI Science Olympiad 2025 dan Technical Meeting 1.",
     },
     {
-      date: "5 Maret 2025",
-      title: "Seminar Lingkungan",
-      description: "Seminar khusus tentang isu lingkungan dan keberlanjutan",
+      date: "20 Oktober 2025",
+      title: "Open Submission",
+      description: "Pembukaan pengumpulan karya untuk Study Case Competition dan Esai Gagasan Kritis.",
     },
     {
-      date: "8-9 Maret 2025",
+      date: "2 November 2025",
       title: "Babak Penyisihan",
-      description: "Pelaksanaan babak penyisihan untuk semua kategori kompetisi",
+      description: "Pelaksanaan Babak Penyisihan Olimpiade Sains Pelajar.",
     },
     {
-      date: "10 Maret 2025",
-      title: "Campus Tour",
-      description: "Tur kampus UI dan kunjungan ke laboratorium penelitian",
+      date: "3 November 2025",
+      title: "Close Submission",
+      description: "Penutupan pengumpulan karya untuk Study Case Competition dan Esai Gagasan Kritis.",
     },
     {
-      date: "12-14 Maret 2025",
-      title: "Babak Final",
-      description: "Pelaksanaan babak final dan presentasi karya peserta",
+      date: "10 November 2025",
+      title: "Pengumuman Peserta Lolos",
+      description: "Pengumuman peserta yang lolos seleksi Olimpiade Sains Pelajar, Study Case Competition, dan Esai Gagasan Kritis.",
     },
     {
-      date: "15 Maret 2025",
-      title: "Grand Closing",
-      description: "Penutupan acara dan pengumuman pemenang UISO 2025",
+      date: "21 November 2025",
+      title: "Technical Meeting 2",
+      description: "Technical Meeting 2 UI Science Olympiad 2025.",
     },
-  ]
+    {
+      date: "23 November 2025",
+      title: "Babak Final Study Case & Esai",
+      description: "Pelaksanaan Babak Final Study Case Competition dan Esai Gagasan Kritis.",
+    },
+    {
+      date: "28 November 2025",
+      title: "Babak Final Olimpiade",
+      description: "Pelaksanaan Babak Final Olimpiade Sains Pelajar.",
+    },
+    {
+      date: "29 November 2025",
+      title: "Seminar & Campus Tour",
+      description: "Seminar Lingkungan dan Campus Tour UI Science Olympiad 2025.",
+    },
+    {
+      date: "30 November 2025",
+      title: "Grand Closing & Awarding Day",
+      description: "Penutupan resmi dan pemberian penghargaan UI Science Olympiad 2025.",
+    },
+  ];
+
 
   return (
     <section id="timeline" className="py-20 bg-white">

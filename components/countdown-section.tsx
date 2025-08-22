@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from 'next/link';
 
 export function CountdownSection() {
   const [timeLeft, setTimeLeft] = useState({
@@ -11,7 +12,7 @@ export function CountdownSection() {
   })
 
   useEffect(() => {
-    const targetDate = new Date("2025-08-23T00:00:00").getTime()
+    const targetDate = new Date("2025-08-23T20:00:00").getTime()
 
     const timer = setInterval(() => {
       const now = new Date().getTime()
@@ -73,10 +74,11 @@ export function CountdownSection() {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="bg-gradient-to-r from-primary to-secondary text-white px-8 py-4 rounded-full font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200">
-            Daftar Sekarang
-          </button>
-
+          <Link href="/login">    
+            <button className="bg-gradient-to-r from-primary to-secondary text-white px-8 py-4 rounded-full font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200">
+              Daftar Sekarang
+            </button>
+          </Link>   
         </div>
       </div>
     </section>

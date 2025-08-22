@@ -8,41 +8,32 @@ export function CompetitionSection() {
 
   const competitions = {
     OSP: {
-      title: "Olimpiade Sains Pengetahuan",
+      title: "Olimpiade Sains Pelajar",
       description:
         "Kompetisi yang menguji kemampuan siswa dalam bidang sains dasar meliputi Matematika, Fisika, Kimia, dan Biologi. Peserta akan menghadapi soal-soal yang menantang dan membutuhkan pemahaman konsep yang mendalam.",
       details: [
         "Kategori: SMA/MA sederajat",
-        "Bidang: Matematika, Fisika, Kimia, Biologi",
-        "Format: Tes tertulis dan praktikum",
-        "Durasi: 3 jam per bidang",
-        "Hadiah: Total 50 juta rupiah",
+        "Jenis Lomba: Individu"
       ],
       image: "/placeholder.svg?height=400&width=600&text=OSP+Competition",
     },
     SCC: {
-      title: "Science Creative Competition",
+      title: "Study Case Competition",
       description:
         "Kompetisi kreativitas sains yang mengajak peserta untuk menciptakan inovasi dan solusi kreatif terhadap permasalahan sehari-hari menggunakan pendekatan ilmiah dan teknologi terkini.",
       details: [
-        "Kategori: SMA/MA sederajat",
-        "Format: Presentasi karya ilmiah",
-        "Tema: Teknologi Berkelanjutan",
-        "Tim: 2-3 orang per tim",
-        "Hadiah: Total 30 juta rupiah",
+        "Kategori: Perguruan Tinggi/Sederajat",
+        "Jenis Lomba: Tim (2-3 orang)"
       ],
       image: "/placeholder.svg?height=400&width=600&text=SCC+Competition",
     },
     EGK: {
-      title: "Environmental Green Knowledge",
+      title: "Esai Gagasan Kreatif",
       description:
         "Kompetisi yang fokus pada pengetahuan lingkungan dan keberlanjutan. Peserta akan diuji tentang pemahaman mereka terhadap isu-isu lingkungan global dan solusi ramah lingkungan.",
       details: [
-        "Kategori: SMA/MA sederajat",
-        "Fokus: Lingkungan dan Keberlanjutan",
-        "Format: Tes dan studi kasus",
-        "Durasi: 2 jam",
-        "Hadiah: Total 20 juta rupiah",
+        "Kategori: Perguruan Tinggi/Sederajat",
+        "Jenis Lomba: Individu"
       ],
       image: "/placeholder.svg?height=400&width=600&text=EGK+Competition",
     },
@@ -63,7 +54,7 @@ export function CompetitionSection() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Tab Buttons */}
           <div className="lg:col-span-1">
-            <div className="space-y-4">
+            <div className="space-y-1">
               {Object.keys(competitions).map((key) => (
                 <Button
                   key={key}
@@ -87,16 +78,11 @@ export function CompetitionSection() {
           {/* Content */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              <img
-                src={competitions[activeTab].image || "/placeholder.svg"}
-                alt={competitions[activeTab].title}
-                className="w-full h-64 object-cover"
-              />
               <div className="p-8">
                 <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-4">
                   {competitions[activeTab].title}
                 </h3>
-                <p className="text-gray-600 mb-6 leading-relaxed">{competitions[activeTab].description}</p>
+                <p className="text-gray-600 mb-16 leading-relaxed">{competitions[activeTab].description}</p>
                 <div className="space-y-3">
                   {competitions[activeTab].details.map((detail, index) => (
                     <div key={index} className="flex items-center gap-3">
@@ -105,9 +91,6 @@ export function CompetitionSection() {
                     </div>
                   ))}
                 </div>
-                <Button className="mt-6 bg-gradient-to-r from-accent to-accent-light hover:from-accent-dark hover:to-accent text-accent-foreground shadow-lg">
-                  Daftar {activeTab}
-                </Button>
               </div>
             </div>
           </div>

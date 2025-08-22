@@ -5,33 +5,33 @@ export function EventSeriesSection() {
       description:
         "Kunjungan ke berbagai sekolah di seluruh Indonesia untuk memperkenalkan UISO dan memberikan workshop persiapan kompetisi.",
       image: "/placeholder.svg?height=300&width=400&text=Roadshow",
-      date: "Januari - Februari 2025",
+      date: "Agustus - Oktober 2025",
     },
     {
       title: "Grand Opening & Webinar",
       description: "Pembukaan resmi UISO 2025 dengan webinar inspiratif dari para ahli sains dan teknologi terkemuka.",
       image: "/placeholder.svg?height=300&width=400&text=Grand+Opening",
-      date: "1 Maret 2025",
+      date: "19 Oktober 2025",
     },
     {
       title: "Seminar Lingkungan",
       description:
         "Seminar khusus tentang isu-isu lingkungan terkini dan solusi berkelanjutan untuk masa depan yang lebih hijau.",
       image: "/placeholder.svg?height=300&width=400&text=Environmental+Seminar",
-      date: "5 Maret 2025",
+      date: "29 November 2025",
     },
     {
       title: "Campus Tour",
       description:
         "Tur eksklusif ke kampus Universitas Indonesia dengan kunjungan ke laboratorium dan fasilitas penelitian terdepan.",
       image: "/placeholder.svg?height=300&width=400&text=Campus+Tour",
-      date: "10 Maret 2025",
+      date: "29 November 2025",
     },
     {
       title: "Grand Closing & Awarding Day",
       description: "Penutupan UISO 2025 dengan pengumuman pemenang dan penyerahan hadiah kepada para juara kompetisi.",
       image: "/placeholder.svg?height=300&width=400&text=Awarding+Day",
-      date: "15 Maret 2025",
+      date: "30 November",
     },
   ]
 
@@ -70,9 +70,6 @@ export function EventSeriesSection() {
                   {event.title}
                 </h3>
                 <p className="text-lg text-gray-600 leading-relaxed">{event.description}</p>
-                <button className="bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl">
-                  Pelajari Lebih Lanjut
-                </button>
               </div>
             </div>
           ))}
