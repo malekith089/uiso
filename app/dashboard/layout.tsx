@@ -27,16 +27,16 @@ const sidebarItems = [
     href: "/dashboard",
     icon: Home,
   },
-  {
-    title: "Pendaftaran Kompetisi",
-    href: "/dashboard/pendaftaran",
-    icon: FileText,
-  },
-  {
-    title: "Submisi",
-    href: "/dashboard/submisi",
-    icon: Upload,
-  },
+  // {
+  //   title: "Pendaftaran Kompetisi",
+  //   href: "/dashboard/pendaftaran",
+  //   icon: FileText,
+  // },
+  // {
+  //   title: "Submisi",
+  //   href: "/dashboard/submisi",
+  //   icon: Upload,
+  // },
 ]
 
 export default function DashboardLayout({

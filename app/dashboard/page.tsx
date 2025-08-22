@@ -142,7 +142,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Timeline Lomba */}
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
@@ -174,10 +174,10 @@ export default function DashboardPage() {
               ))}
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Status Pendaftaran */}
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5" />
@@ -211,7 +211,7 @@ export default function DashboardPage() {
               </div>
             )}
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   )
