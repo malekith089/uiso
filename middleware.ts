@@ -1,9 +1,11 @@
-import NextAuth from "next-auth"
-import { authConfig } from "./auth.config"
+import { auth } from '@/lib/auth'; // Import the Edge-compatible auth function
 
-export default NextAuth(authConfig).auth
+// Use the imported auth function directly as the middleware.
+// This avoids initializing NextAuth in the middleware and prevents the error.
+export default auth;
 
+// The matcher configures the middleware to run on all paths except for
+// specific ones like API routes, static files, and images.
 export const config = {
-  // https://nextjs.org/docs/app/building-your-application/routing/middleware#matcher
-  matcher: ["/((?!api|_next/static|_next/image|.*\\.png$).*)"],
-}
+  matcher: ['/((?!api|_next/static|_next/image|.*\\.png$).*)'],
+};
