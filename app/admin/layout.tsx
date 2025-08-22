@@ -70,11 +70,16 @@ export default function AdminLayout({
         return
       }
 
-      // For now, we'll check if email contains "admin" - in production, use proper role-based access
-      const isAdmin = user.email?.includes("admin") || user.email === "admin@uiso2025.com"
+      // Fetch user profile to check for role
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
 
-      if (!isAdmin) {
-        router.push("/dashboard") // Redirect non-admin users to regular dashboard
+      if (profileError || profile?.role !== "admin") {
+        // Redirect non-admin users to the regular dashboard
+        router.push("/dashboard")
         return
       }
 
