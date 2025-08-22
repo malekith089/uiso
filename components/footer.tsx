@@ -1,13 +1,14 @@
-import { Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin } from "lucide-react"
+import { SiTiktok, SiInstagram } from "react-icons/si";
+import { Mail, Phone, MapPin } from "lucide-react"
 import Image from "next/image"
 
 export function Footer() {
   return (
     <footer className="bg-gradient-to-br from-primary to-primary-dark text-white">
-      <div className="max-w-6xl mx-auto px-6 py-16">
+      <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Logo and Description */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-3">
             <div className="flex items-center gap-3 mb-6">
               <Image
                 src="/images/uiso-logo.png"
@@ -24,34 +25,22 @@ export function Footer() {
             </p>
             <div className="flex gap-4">
               <a
-                href="#"
+                href="http://www.instagram.com/uiso.2025/"
                 className="w-10 h-10 bg-gradient-to-br from-accent to-accent-light rounded-full flex items-center justify-center hover:from-accent-light hover:to-accent transition-all duration-300 shadow-lg"
               >
-                <Facebook className="w-5 h-5 text-primary" />
+                <SiInstagram className="w-5 h-5 text-primary" />
               </a>
               <a
-                href="#"
+                href="https://www.tiktok.com/@uiso.2025"
                 className="w-10 h-10 bg-gradient-to-br from-accent to-accent-light rounded-full flex items-center justify-center hover:from-accent-light hover:to-accent transition-all duration-300 shadow-lg"
               >
-                <Instagram className="w-5 h-5 text-primary" />
-              </a>
-              <a
-                href="#"
-                className="w-10 h-10 bg-gradient-to-br from-accent to-accent-light rounded-full flex items-center justify-center hover:from-accent-light hover:to-accent transition-all duration-300 shadow-lg"
-              >
-                <Twitter className="w-5 h-5 text-primary" />
-              </a>
-              <a
-                href="#"
-                className="w-10 h-10 bg-gradient-to-br from-accent to-accent-light rounded-full flex items-center justify-center hover:from-accent-light hover:to-accent transition-all duration-300 shadow-lg"
-              >
-                <Youtube className="w-5 h-5 text-primary" />
+                <SiTiktok className="w-5 h-5 text-primary" />
               </a>
             </div>
           </div>
 
           {/* Quick Links */}
-          <div>
+          {/* <div>
             <h3 className="text-xl font-bold mb-6 text-accent-light">Navigasi Cepat</h3>
             <ul className="space-y-3">
               <li>
@@ -85,7 +74,7 @@ export function Footer() {
                 </a>
               </li>
             </ul>
-          </div>
+          </div> */}
 
           {/* Contact Info */}
           <div>
@@ -97,11 +86,11 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-accent" />
-                <span className="text-gray-300">+62 21 7863479</span>
+                <span className="text-gray-300">TBA</span>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-accent" />
-                <span className="text-gray-300">info@uiso.ui.ac.id</span>
+                <span className="text-gray-300">TBA</span>
               </div>
             </div>
           </div>
@@ -109,7 +98,7 @@ export function Footer() {
 
         <div className="border-t border-white/20 mt-12 pt-8 text-center">
           <p className="text-gray-300">
-            © 2025 UI Science Olympiad. All rights reserved. | Organized by Universitas Indonesia
+            © 2025 UI Science Olympiad. All rights reserved.
           </p>
         </div>
       </div>
