@@ -1,8 +1,13 @@
-import { auth } from '@/lib/auth'; // Import the Edge-compatible auth function
+import { auth } from '@/lib/auth';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-// Use the imported auth function directly as the middleware.
-// This avoids initializing NextAuth in the middleware and prevents the error.
-export default auth;
+// Wrap the auth function to ensure proper middleware behavior
+export default auth((req: NextRequest & { auth: any }) => {
+  // The auth function automatically handles authentication
+  // You can add additional logic here if needed
+  return NextResponse.next();
+});
 
 // The matcher configures the middleware to run on all paths except for
 // specific ones like API routes, static files, and images.

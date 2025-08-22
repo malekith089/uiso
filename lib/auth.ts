@@ -1,12 +1,15 @@
 import NextAuth from "next-auth";
-import type { NextAuthConfig } from 'next-auth';
 import Credentials from "next-auth/providers/credentials";
 import { createClient } from "@/lib/supabase/server";
+import type { User } from "next-auth";
+import type { JWT } from "next-auth/jwt";
+
+// The User and JWT types are already extended in your types/next-auth.d.ts file
 
 /**
- * NextAuth.js configuration for email/password authentication only
+ * NextAuth v5 (Auth.js) configuration for email/password authentication only
  */
-const authOptions: NextAuthConfig = {
+export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: '/login',
   },
@@ -31,12 +34,12 @@ const authOptions: NextAuthConfig = {
     },
     
     async session({ session, token }) {
-      if (token) {
+      if (token && session.user) {
         session.user.id = token.sub!;
-        session.user.role = token.role as string || 'user';
-        session.user.school = token.school as string || '';
-        session.user.education_level = token.education_level as string || '';
-        session.user.identity_number = token.identity_number as string || '';
+        session.user.role = token.role || 'user';
+        session.user.school = token.school || '';
+        session.user.education_level = token.education_level || '';
+        session.user.identity_number = token.identity_number || '';
       }
       return session;
     },
@@ -120,9 +123,4 @@ const authOptions: NextAuthConfig = {
   session: {
     strategy: "jwt",
   },
-  
-  // Remove adapter if you want to rely purely on Supabase Auth without NextAuth database
-  // adapter: undefined,
-};
-
-export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);
+});
