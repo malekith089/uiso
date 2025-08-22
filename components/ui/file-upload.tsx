@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Upload, X, CheckCircle } from "lucide-react"
-import { uploadToCloudinary } from "@/lib/cloudinary"
 
 interface FileUploadProps {
   label: string
@@ -44,7 +43,20 @@ export function FileUpload({
     setUploadError(null)
 
     try {
-      const result = await uploadToCloudinary(file, "uiso-2025/documents")
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("folder", "uiso-2025/documents")
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Upload failed")
+      }
+
+      const result = await response.json()
 
       if (result.success && result.url) {
         onUpload(result.url)
@@ -52,6 +64,7 @@ export function FileUpload({
         setUploadError(result.error || "Upload failed")
       }
     } catch (error) {
+      console.error("Upload error:", error)
       setUploadError("Upload failed. Please try again.")
     } finally {
       setIsUploading(false)
