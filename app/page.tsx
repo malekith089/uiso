@@ -18,10 +18,10 @@ export default function UisoLandingPage() {
         <AboutSection />
         <CompetitionSection />
         <EventSeriesSection />
-        {/* <SpeakersSection /> */}
+        <SpeakersSection />
         <TimelineSection />
-        {/* <TestimonialsSection /> */}
-        {/* <PartnersSection /> */}
+        <TestimonialsSection />
+        <PartnersSection />
       </main>
       <Footer />
     </div>
