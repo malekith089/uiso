@@ -10,7 +10,7 @@ export function CompetitionSection() {
     OSP: {
       title: "Olimpiade Sains Pelajar",
       description:
-        "Kompetisi yang menguji kemampuan siswa dalam bidang sains dasar meliputi Matematika, Fisika, Kimia, dan Biologi. Peserta akan menghadapi soal-soal yang menantang dan membutuhkan pemahaman konsep yang mendalam.",
+        "Kompetisi yang menguji kemampuan siswa dalam bidang sains dasar meliputi Matematika, Fisika, Kimia, Biologi, Geografi dan Kebumian. Peserta akan menghadapi soal-soal yang menantang dan membutuhkan pemahaman konsep yang mendalam.",
       details: [
         "Kategori: SMA/MA sederajat",
         "Jenis Lomba: Individu"
