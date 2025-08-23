@@ -7,7 +7,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    domains: ['placeholder.svg'],
+    formats: ['image/webp', 'image/avif'],
   },
 }
 

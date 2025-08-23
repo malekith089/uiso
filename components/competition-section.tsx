@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, memo } from "react"
 import { Button } from "@/components/ui/button"
 
-export function CompetitionSection() {
+const CompetitionSection = memo(function CompetitionSection() {
   const [activeTab, setActiveTab] = useState("OSP")
 
   const competitions = {
@@ -11,30 +11,21 @@ export function CompetitionSection() {
       title: "Olimpiade Sains Pelajar",
       description:
         "Kompetisi yang menguji kemampuan siswa dalam bidang sains dasar meliputi Matematika, Fisika, Kimia, dan Biologi. Peserta akan menghadapi soal-soal yang menantang dan membutuhkan pemahaman konsep yang mendalam.",
-      details: [
-        "Kategori: SMA/MA sederajat",
-        "Jenis Lomba: Individu"
-      ],
+      details: ["Kategori: SMA/MA sederajat", "Jenis Lomba: Individu"],
       image: "/placeholder.svg?height=400&width=600&text=OSP+Competition",
     },
     SCC: {
       title: "Study Case Competition",
       description:
         "Kompetisi kreativitas sains yang mengajak peserta untuk menciptakan inovasi dan solusi kreatif terhadap permasalahan sehari-hari menggunakan pendekatan ilmiah dan teknologi terkini.",
-      details: [
-        "Kategori: Perguruan Tinggi/Sederajat",
-        "Jenis Lomba: Tim (2-3 orang)"
-      ],
+      details: ["Kategori: Perguruan Tinggi/Sederajat", "Jenis Lomba: Tim (2-3 orang)"],
       image: "/placeholder.svg?height=400&width=600&text=SCC+Competition",
     },
     EGK: {
       title: "Esai Gagasan Kreatif",
       description:
         "Kompetisi yang fokus pada pengetahuan lingkungan dan keberlanjutan. Peserta akan diuji tentang pemahaman mereka terhadap isu-isu lingkungan global dan solusi ramah lingkungan.",
-      details: [
-        "Kategori: Perguruan Tinggi/Sederajat",
-        "Jenis Lomba: Individu"
-      ],
+      details: ["Kategori: Perguruan Tinggi/Sederajat", "Jenis Lomba: Individu"],
       image: "/placeholder.svg?height=400&width=600&text=EGK+Competition",
     },
   }
@@ -82,7 +73,7 @@ export function CompetitionSection() {
                 <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-4">
                   {competitions[activeTab].title}
                 </h3>
-                <p className="text-gray-600 mb-16 leading-relaxed">{competitions[activeTab].description}</p>
+                <p className="text-gray-600 mb-6 leading-relaxed">{competitions[activeTab].description}</p>
                 <div className="space-y-3">
                   {competitions[activeTab].details.map((detail, index) => (
                     <div key={index} className="flex items-center gap-3">
@@ -98,4 +89,6 @@ export function CompetitionSection() {
       </div>
     </section>
   )
-}
+})
+
+export { CompetitionSection }

@@ -1,14 +1,17 @@
-import type { Metadata } from 'next'
-import { GeistSans } from 'geist/font/sans'
-import { GeistMono } from 'geist/font/mono'
-import './globals.css'
+import type React from "react"
+import type { Metadata } from "next"
+import { GeistSans } from "geist/font/sans"
+import { GeistMono } from "geist/font/mono"
+import "./globals.css"
+import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'UISO 2025',
+  title: "UISO 2025",
   description: "UI Science Olympiad 2025",
   icons: {
     icon: "/images/uiso-logo.png",
-  }
+  },
+    generator: 'v0.app'
 }
 
 export default function RootLayout({
@@ -27,7 +30,10 @@ html {
 }
         `}</style>
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Toaster />
+      </body>
     </html>
   )
 }
