@@ -28,7 +28,7 @@ export function CompetitionSection() {
       image: "/placeholder.svg?height=400&width=600&text=SCC+Competition",
     },
     EGK: {
-      title: "Esai Gagasan Kreatif",
+      title: "Esai Gagasan Kritis",
       description:
         "Kompetisi yang fokus pada pengetahuan lingkungan dan keberlanjutan. Peserta akan diuji tentang pemahaman mereka terhadap isu-isu lingkungan global dan solusi ramah lingkungan.",
       details: [
