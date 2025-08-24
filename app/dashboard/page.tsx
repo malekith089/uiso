@@ -64,15 +64,16 @@ export default function DashboardPage() {
       } = await supabase.auth.getUser()
 
       if (user) {
-        // Fetch user profile and registrations in parallel for better performance
         const [profileResult, registrationsResult] = await Promise.all([
           supabase.from("profiles").select("*").eq("id", user.id).single(),
           supabase
             .from("registrations")
-            .select(`
+            .select(
+              `
               *,
               competitions (*)
-            `)
+            `,
+            )
             .eq("user_id", user.id)
             .order("created_at", { ascending: false }),
         ])
@@ -187,42 +188,25 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Timeline Lomba */}
-        {/* <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Timeline Lomba
-            </CardTitle>
-            <CardDescription>Jadwal penting kompetisi UISO 2025</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {timeline.map((item, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 rounded-lg border">
-                  <div className="flex-shrink-0">
-                    {item.status === "completed" && <CheckCircle className="h-5 w-5 text-green-500" />}
-                    {item.status === "upcoming" && item.type === "deadline" && (
-                      <AlertTriangle className="h-5 w-5 text-orange-500" />
-                    )}
-                    {item.status === "upcoming" && item.type !== "deadline" && (
-                      <Clock className="h-5 w-5 text-blue-500" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{item.event}</p>
-                    <p className="text-xs text-gray-500">{item.date}</p>
-                  </div>
-                  <Badge variant={item.status === "completed" ? "default" : "secondary"}>
-                    {item.status === "completed" ? "Selesai" : "Mendatang"}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card> */}
+      {/* Permanent Alert for Profile Completion */}
+      <Card className="border-yellow-500 bg-yellow-50">
+        <CardHeader className="flex flex-row items-start gap-4 space-y-0 p-4">
+          <AlertTriangle className="h-6 w-6 text-yellow-700 flex-shrink-0" />
+          <div className="flex-1">
+            <CardTitle className="text-base text-yellow-800">Lengkapi Profil Anda</CardTitle>
+            <CardDescription className="text-yellow-700 mt-1">
+              Harap pastikan profil Anda sudah lengkap. Kelengkapan data wajib bagi peserta OSP dan EGK. Ada pada pojok kanan atas atau Button di samping
+            </CardDescription>
+          </div>
+          <Link href="/dashboard/profile">
+            <Button variant="outline" size="sm" className="bg-transparent text-yellow-800 border-yellow-600 hover:bg-yellow-100">
+              Lengkapi
+            </Button>
+          </Link>
+        </CardHeader>
+      </Card>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status Pendaftaran */}
         <Card>
           <CardHeader>

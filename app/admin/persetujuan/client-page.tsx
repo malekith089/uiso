@@ -47,6 +47,73 @@ import { showErrorToast, showSuccessToast, withRetry } from "@/lib/error-handler
 import { ErrorBoundary } from "@/components/error-boundary"
 import type { Registration } from "./page"
 
+const downloadFile = async (url: string, filename: string) => {
+  try {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
+  } catch (error) {
+    console.error('Error downloading file:', error)
+    showErrorToast(error, 'downloadFile')
+  }
+}
+
+const getFileType = (url: string): 'image' | 'pdf' | 'unknown' => {
+  if (!url) return 'unknown'
+  const extension = url.split('.').pop()?.toLowerCase()
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
+    return 'image'
+  } else if (extension === 'pdf') {
+    return 'pdf'
+  }
+  return 'unknown'
+}
+
+const FileViewer = ({ url, alt, className }: { url: string | null; alt: string; className?: string }) => {
+  if (!url) {
+    return (
+      <div className={`bg-gray-100 rounded-lg flex items-center justify-center ${className}`}>
+        <FileText className="w-8 h-8 text-gray-400" />
+      </div>
+    )
+  }
+
+  const fileType = getFileType(url)
+
+  if (fileType === 'image') {
+    return (
+      <img
+        src={url}
+        alt={alt}
+        className={`object-cover rounded-lg ${className}`}
+        onError={(e) => {
+          (e.target as HTMLImageElement).src = '/placeholder.svg'
+        }}
+      />
+    )
+  } else if (fileType === 'pdf') {
+    return (
+      <div className={`bg-red-50 rounded-lg flex flex-col items-center justify-center ${className}`}>
+        <FileText className="w-8 h-8 text-red-500 mb-2" />
+        <span className="text-xs text-red-700">PDF File</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className={`bg-gray-100 rounded-lg flex items-center justify-center ${className}`}>
+      <FileText className="w-8 h-8 text-gray-400" />
+    </div>
+  )
+}
+
 export default function RegistrationApprovalClient({
   initialRegistrations,
   stats,
@@ -54,6 +121,7 @@ export default function RegistrationApprovalClient({
   initialRegistrations: Registration[]
   stats: { pending: number; approvedToday: number; rejectedToday: number; total: number }
 }) {
+  
   const [registrations, setRegistrations] = useState<Registration[]>(initialRegistrations)
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
   const [approvalReason, setApprovalReason] = useState("")
@@ -494,110 +562,150 @@ export default function RegistrationApprovalClient({
                                   </TabsContent>
 
                                   <TabsContent value="files" className="space-y-4">
-                                    <div className="grid gap-4 md:grid-cols-3">
-                                      <Card>
-                                        <CardHeader className="pb-2">
-                                          <CardTitle className="text-sm flex items-center gap-2">
-                                            <ImageIcon className="w-4 h-4" />
-                                            Kartu Identitas
-                                          </CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                          <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center mb-2">
-                                            {registration.identity_card_url && (
-                                              <img
-                                                src={registration.identity_card_url || "/placeholder.svg"}
-                                                alt="Kartu Identitas"
-                                                className="w-full h-full object-cover rounded-lg"
-                                              />
-                                            )}
-                                            {!registration.identity_card_url && (
-                                              <ImageIcon className="w-8 h-8 text-gray-400" />
-                                            )}
-                                          </div>
-                                          <Button variant="outline" size="sm" className="w-full bg-transparent">
-                                            <Download className="w-4 h-4 mr-2" />
-                                            Unduh
-                                          </Button>
-                                        </CardContent>
-                                      </Card>
+  <div className="grid gap-4 md:grid-cols-3">
+    {/* Kartu Identitas */}
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <ImageIcon className="w-4 h-4" />
+          Kartu Identitas
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="aspect-video mb-2">
+          <FileViewer 
+            url={registration.identity_card_url}
+            alt="Kartu Identitas"
+            className="w-full h-full"
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex-1" 
+            onClick={() => registration.identity_card_url && downloadFile(
+              registration.identity_card_url, 
+              `KTP_${registration.profiles.full_name}.${registration.identity_card_url.split('.').pop()}`
+            )}
+            disabled={!registration.identity_card_url}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Unduh
+          </Button>
+          {registration.identity_card_url && getFileType(registration.identity_card_url) === 'pdf' && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => window.open(registration.identity_card_url, '_blank')}
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
 
-                                      <Card>
-                                        <CardHeader className="pb-2">
-                                          <CardTitle className="text-sm flex items-center gap-2">
-                                            <FileText className="w-4 h-4" />
-                                            Bukti Engagement
-                                          </CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                          <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center mb-2">
-                                            {registration.engagement_proof_url && (
-                                              <img
-                                                src={registration.engagement_proof_url || "/placeholder.svg"}
-                                                alt="Bukti Engagement"
-                                                className="w-full h-full object-cover rounded-lg"
-                                              />
-                                            )}
-                                            {!registration.engagement_proof_url && (
-                                              <FileText className="w-8 h-8 text-gray-400" />
-                                            )}
-                                          </div>
-                                          <Button variant="outline" size="sm" className="w-full bg-transparent">
-                                            <Download className="w-4 h-4 mr-2" />
-                                            Unduh
-                                          </Button>
-                                        </CardContent>
-                                      </Card>
+    {/* Bukti Engagement */}
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <FileText className="w-4 h-4" />
+          Bukti Engagement
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="aspect-video mb-2">
+          <FileViewer 
+            url={registration.engagement_proof_url}
+            alt="Bukti Engagement"
+            className="w-full h-full"
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex-1"
+            onClick={() => registration.engagement_proof_url && downloadFile(
+              registration.engagement_proof_url, 
+              `Engagement_${registration.profiles.full_name}.${registration.engagement_proof_url.split('.').pop()}`
+            )}
+            disabled={!registration.engagement_proof_url}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Unduh
+          </Button>
+          {registration.engagement_proof_url && getFileType(registration.engagement_proof_url) === 'pdf' && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => window.open(registration.engagement_proof_url, '_blank')}
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
 
-                                      <Card>
-                                        <CardHeader className="pb-2">
-                                          <CardTitle className="text-sm flex items-center gap-2">
-                                            <CreditCard className="w-4 h-4" />
-                                            Bukti Pembayaran
-                                          </CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                          <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center mb-2">
-                                            {registration.payment_proof_url && (
-                                              <img
-                                                src={registration.payment_proof_url || "/placeholder.svg"}
-                                                alt="Bukti Pembayaran"
-                                                className="w-full h-full object-cover rounded-lg"
-                                              />
-                                            )}
-                                            {!registration.payment_proof_url && (
-                                              <CreditCard className="w-8 h-8 text-gray-400" />
-                                            )}
-                                          </div>
-                                          <Button variant="outline" size="sm" className="w-full bg-transparent">
-                                            <Download className="w-4 h-4 mr-2" />
-                                            Unduh
-                                          </Button>
-                                        </CardContent>
-                                      </Card>
-                                    </div>
-
-                                    <Card className="bg-blue-50 border-blue-200">
-                                      <CardContent className="pt-4">
-                                        <h4 className="font-medium mb-2">Informasi Rekening Pembayaran:</h4>
-                                        <div className="text-sm space-y-1">
-                                          <p>
-                                            <strong>Bank:</strong> BCA
-                                          </p>
-                                          <p>
-                                            <strong>No. Rekening:</strong> 1234567890
-                                          </p>
-                                          <p>
-                                            <strong>Atas Nama:</strong> UISO 2025
-                                          </p>
-                                          <p>
-                                            <strong>Jumlah:</strong> Rp 50.000
-                                          </p>
-                                        </div>
-                                      </CardContent>
-                                    </Card>
-                                  </TabsContent>
-
+    {/* Bukti Pembayaran */}
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <CreditCard className="w-4 h-4" />
+          Bukti Pembayaran
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="aspect-video mb-2">
+          <FileViewer 
+            url={registration.payment_proof_url}
+            alt="Bukti Pembayaran"
+            className="w-full h-full"
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex-1"
+            onClick={() => registration.payment_proof_url && downloadFile(
+              registration.payment_proof_url, 
+              `Payment_${registration.profiles.full_name}.${registration.payment_proof_url.split('.').pop()}`
+            )}
+            disabled={!registration.payment_proof_url}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Unduh
+          </Button>
+          {registration.payment_proof_url && getFileType(registration.payment_proof_url) === 'pdf' && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => window.open(registration.payment_proof_url, '_blank')}
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+  
+  {/* Informasi rekening tetap sama */}
+  <Card className="bg-blue-50 border-blue-200">
+    <CardContent className="pt-4">
+      <h4 className="font-medium mb-2">Informasi Rekening Pembayaran:</h4>
+      <div className="text-sm space-y-1">
+        <p><strong>Bank:</strong> BCA</p>
+        <p><strong>No. Rekening:</strong> 1234567890</p>
+        <p><strong>Atas Nama:</strong> UISO 2025</p>
+        <p><strong>Jumlah:</strong> Rp 50.000</p>
+      </div>
+    </CardContent>
+  </Card>
+</TabsContent>
                                   {registration.team_members &&
                                   registration.competitions.code !== "OSP" &&
                                   registration.competitions.code !== "EGK" && (
@@ -720,22 +828,36 @@ export default function RegistrationApprovalClient({
                                                 <div>
                                                   <Label className="text-sm font-medium">Kartu Identitas</Label>
                                                   <div className="mt-2 flex items-center gap-2">
-                                                    {member.identity_card_url && (
-                                                      <img
-                                                        src={member.identity_card_url || "/placeholder.svg"}
-                                                        alt="Kartu Identitas"
-                                                        className="w-20 h-12 bg-gray-100 rounded flex items-center justify-center"
-                                                      />
-                                                    )}
-                                                    {!member.identity_card_url && (
-                                                      <div className="w-20 h-12 bg-gray-100 rounded flex items-center justify-center">
-                                                        <ImageIcon className="w-4 h-4 text-gray-400" />
-                                                      </div>
-                                                    )}
-                                                    <Button variant="outline" size="sm">
-                                                      <Download className="w-4 h-4 mr-2" />
-                                                      Unduh
-                                                    </Button>
+  <div className="w-20 h-12">
+    <FileViewer 
+      url={member.identity_card_url}
+      alt="Kartu Identitas"
+      className="w-full h-full"
+    />
+  </div>
+  <div className="flex gap-1">
+    <Button 
+      variant="outline" 
+      size="sm"
+      onClick={() => member.identity_card_url && downloadFile(
+        member.identity_card_url, 
+        `KTP_${member.full_name}.${member.identity_card_url.split('.').pop()}`
+      )}
+      disabled={!member.identity_card_url}
+    >
+      <Download className="w-4 h-4 mr-2" />
+      Unduh
+    </Button>
+    {member.identity_card_url && getFileType(member.identity_card_url) === 'pdf' && (
+      <Button 
+        variant="outline" 
+        size="sm"
+        onClick={() => window.open(member.identity_card_url, '_blank')}
+      >
+        <Eye className="w-4 h-4" />
+      </Button>
+    )}
+  </div>
                                                   </div>
                                                 </div>
                                               </div>

@@ -79,7 +79,7 @@ export default function PendaftaranPage() {
         email: "",
         phone: "",
         schoolInstitution: "",
-        educationLevel: "",
+        educationLevel: "Mahasiswa/i",
         kelas: "",
         semester: "",
         tempatLahir: "",
@@ -245,7 +245,7 @@ export default function PendaftaranPage() {
           email: "",
           phone: "",
           schoolInstitution: "",
-          educationLevel: "",
+          educationLevel: "Mahasiswa/i",
           kelas: "",
           semester: "",
           tempatLahir: "",
@@ -296,7 +296,7 @@ export default function PendaftaranPage() {
         email: "",
         phone: "",
         schoolInstitution: "",
-        educationLevel: "",
+        educationLevel: "Mahasiswa/i",
         kelas: "",
         semester: "",
         tempatLahir: "",
@@ -556,67 +556,26 @@ export default function PendaftaranPage() {
                             <h5 className="font-medium text-sm text-gray-700">Informasi Akademik</h5>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div className="space-y-2">
-                                <Label>Sekolah/Institusi</Label>
+                                <Label>Asal Universitas/Institusi</Label>
                                 <Input
                                   value={member.schoolInstitution}
                                   onChange={(e) => handleTeamMemberChange(index, "schoolInstitution", e.target.value)}
-                                  placeholder="Nama sekolah/universitas"
+                                  placeholder="Nama universitas/institusi"
                                   required
                                 />
                               </div>
-                              <div className="space-y-2">
-                                <Label>Jenjang Pendidikan</Label>
-                                <Select
-                                  value={member.educationLevel}
-                                  onValueChange={(value) => handleTeamMemberChange(index, "educationLevel", value)}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Pilih jenjang" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="SMA/Sederajat">SMA/Sederajat</SelectItem>
-                                    <SelectItem value="Mahasiswa/i">Mahasiswa/i</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              {member.educationLevel === "SMA/Sederajat" && (
-                                <div className="space-y-2">
-                                  <Label>Kelas</Label>
-                                  <Select
-                                    value={member.kelas}
-                                    onValueChange={(value) => handleTeamMemberChange(index, "kelas", value)}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Pilih kelas" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="X">X</SelectItem>
-                                      <SelectItem value="XI">XI</SelectItem>
-                                      <SelectItem value="XII">XII</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              )}
-                              {member.educationLevel === "Mahasiswa/i" && (
+                              {/* {member.educationLevel === "Mahasiswa/i" && ( */}
                                 <div className="space-y-2">
                                   <Label>Semester</Label>
-                                  <Select
+                                  <Input
+                                    type="number"
                                     value={member.semester}
-                                    onValueChange={(value) => handleTeamMemberChange(index, "semester", value)}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Pilih semester" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map((sem) => (
-                                        <SelectItem key={sem} value={sem.toString()}>
-                                          Semester {sem}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                    onChange={(e) => handleTeamMemberChange(index, "semester", e.target.value)}
+                                    placeholder="Contoh: 3"
+                                    required
+                                  />
                                 </div>
-                              )}
+                              {/* )} */}
                             </div>
                           </div>
 
@@ -669,7 +628,7 @@ export default function PendaftaranPage() {
 
                           <div className="mt-6">
                             <FileUpload
-                              label={`Kartu Identitas Anggota ${index + 1}`}
+                              label={`Kartu Identitas (KTM) dan Pas Foto Anggota ${index + 1} di satukan/merge (PDF)`}
                               onUpload={(url) => handleTeamMemberChange(index, "identityCardUrl", url)}
                               value={member.identityCardUrl}
                               required
@@ -681,53 +640,80 @@ export default function PendaftaranPage() {
                   )}
 
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Upload Dokumen</h3>
+                    <h3 className="text-lg font-semibold">Upload Berkas</h3>
+                  {selectedCompetition?.code === 'SCC' && (
+                    <div className="bg-amber-50 p-4 rounded-lg mb-4 border border-amber-200">
+                      <h4 className="text-sm font-semibold text-amber-900 mb-2">
+                        Berkas Pendaftaran Tim (Study Case Competition)
+                      </h4>
+                      <p className="text-xs text-amber-800 mb-3">
+                        Semua berkas berikut wajib dikumpulkan dalam format PDF sesuai dengan nama file yang ditentukan.
+                      </p>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-amber-800">
+                        <li>Bukti mengikuti akun Instagram @uiso.2025.</li>
+                        <li>Bukti repost postingan lomba Study Case di Instastory (akun asli, 24 jam).</li>
+                        <li>Bukti unggah Twibbon UISO 2025 di akun Instagram pribadi.</li>
+                      </ul>
+                      <div className="mt-3 pt-3 border-t border-amber-200">
+                          <p className="text-sm font-bold text-red-700">
+                          Catatan Penting:
+                          </p>
+                          <p className="text-sm text-red-600">
+                          Satukan file dari semua anggota tim (Ketua dan Anggota) ke dalam <strong>satu file PDF</strong>
+                          </p>
+                      </div>
+                    </div> )}
 
                     {selectedCompetition.participant_type === "Individual" && (
                       <FileUpload
                         label="Kartu Identitas"
-                        description="Upload KTP/Kartu Pelajar/KTM"
+                        description="Upload Kartu Pelajar (SMA)  |  KTM/Surat Keterangan Mahasiswa (Mahasiswa)"
                         onUpload={(url) => handleInputChange("identityCardUrl", url)}
                         value={formData.identityCardUrl}
                         required
                       />
                     )}
 
-                    <FileUpload
-                      label="Upload Berkas"
-                      description="Upload bukti unggah twibon, dan mengikuti sosial media Chemistry Fair (disatukan/merge)"
-                      onUpload={(url) => handleInputChange("engagementProofUrl", url)}
-                      value={formData.engagementProofUrl}
-                      required
-                    />
+                      <FileUpload
+                        label="Upload Berkas"
+                        description="Upload bukti unggah twibbon, bukti mengikuti akun Instagram @uiso.2025,  dll (Sesuai Booklet Lomba yang didaftar)"
+                        onUpload={(url) => handleInputChange("engagementProofUrl", url)}
+                        value={formData.engagementProofUrl}
+                        required
+                      />
+                      <div style={{ marginTop: '5px' }}>
+                        <a href="https://www.instagram.com/uiso.2025" target="_blank" rel="noopener noreferrer">
+                          Kunjungi akun Instagram @uiso.2025 di sini
+                        </a>
+                      </div>
 
                     <div className="space-y-2">
                       <div className="bg-blue-50 p-3 rounded-lg mb-2">
-  <p className="text-sm font-medium text-blue-900">Informasi Rekening:</p>
-  
-  <p className="text-sm text-blue-800 font-semibold mt-2">Olimpiade Sains Pelajar (OSP)</p>
-  <p className="text-sm text-blue-800">Bank Jago</p>
-  <p className="text-sm text-blue-800">No. Rekening: 103632691747</p>
-  <p className="text-sm text-blue-800">Atas Nama: Gloria Nova Angelina Siahaan</p>
+                        <p className="text-sm font-medium text-blue-900">Informasi Rekening:</p>
+                        
+                        <p className="text-sm text-blue-800 font-semibold mt-2">Olimpiade Sains Pelajar (OSP)</p>
+                        <p className="text-sm text-blue-800">Bank Jago</p>
+                        <p className="text-sm text-blue-800">No. Rekening: 103632691747</p>
+                        <p className="text-sm text-blue-800">Atas Nama: Gloria Nova Angelina Siahaan</p>
 
-  <p className="text-sm text-blue-800 font-semibold mt-2"> Study Case Competition (SCC)</p>
-  <p className="text-sm text-blue-800">Bank Jago</p>
-  <p className="text-sm text-blue-800">No. Rekening: 105806823645</p>
-  <p className="text-sm text-blue-800">Atas Nama: Gloria Nova Angelina Siahaan</p>
+                        <p className="text-sm text-blue-800 font-semibold mt-2"> Study Case Competition (SCC)</p>
+                        <p className="text-sm text-blue-800">Bank Jago</p>
+                        <p className="text-sm text-blue-800">No. Rekening: 105806823645</p>
+                        <p className="text-sm text-blue-800">Atas Nama: Gloria Nova Angelina Siahaan</p>
 
-  <p className="text-sm text-blue-800 font-semibold mt-2">Esai Gagasan Kritis (EGK)</p>
-  <p className="text-sm text-blue-800">Bank Jago</p>
-  <p className="text-sm text-blue-800">No. Rekening: 107659308786</p>
-  <p className="text-sm text-blue-800">Atas Nama: Gloria Nova Angelina Siahaan</p>
+                        <p className="text-sm text-blue-800 font-semibold mt-2">Esai Gagasan Kritis (EGK)</p>
+                        <p className="text-sm text-blue-800">Bank Jago</p>
+                        <p className="text-sm text-blue-800">No. Rekening: 107659308786</p>
+                        <p className="text-sm text-blue-800">Atas Nama: Gloria Nova Angelina Siahaan</p>
 
-  <p className="text-sm text-blue-900 mt-3 font-semibold">Biaya Pendaftaran (Early Bird):</p>
-  <p className="text-sm font-bold text-green-700">
-    SMA: <span className="bg-green-100 px-2 py-0.5 rounded">Rp50.000,-</span>
-  </p>
-  <p className="text-sm font-bold text-green-700">
-    Mahasiswa: <span className="bg-green-100 px-2 py-0.5 rounded">Rp60.000,-</span>
-  </p>
-</div>
+                        <p className="text-sm text-blue-900 mt-3 font-semibold">Biaya Pendaftaran (Early Bird):</p>
+                        <p className="text-sm font-bold text-green-700">
+                          SMA: <span className="bg-green-100 px-2 py-0.5 rounded">Rp50.000,-</span>
+                        </p>
+                        <p className="text-sm font-bold text-green-700">
+                          Mahasiswa: <span className="bg-green-100 px-2 py-0.5 rounded">Rp60.000,-</span>
+                        </p>
+                      </div>
                       <FileUpload
                         label="Bukti Pembayaran"
                         onUpload={(url) => handleInputChange("paymentProofUrl", url)}

@@ -26,8 +26,8 @@ export function FileUpload({
   onUpload,
   value,
   required = false,
-  accept = "image/*,.pdf,.doc,.docx",
-  maxSize = 5,
+  accept = "image/png,image/jpeg,.pdf",
+  maxSize = 2,
 }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
