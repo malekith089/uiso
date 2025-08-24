@@ -119,7 +119,7 @@ export default function ParticipantManagementClient({
       identity_number: participant.identity_number,
       phone: participant.phone || "",
       kelas: participant.kelas || "",
-      semester: participant.semester || "",
+      semester: participant.semester?.toString() || "",
       tempat_lahir: participant.tempat_lahir || "",
       tanggal_lahir: participant.tanggal_lahir || "",
       jenis_kelamin: participant.jenis_kelamin || "",

@@ -597,7 +597,7 @@ export default function RegistrationApprovalClient({
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => window.open(registration.identity_card_url, '_blank')}
+              onClick={() => window.open(registration.identity_card_url!, '_blank')}
             >
               <Eye className="w-4 h-4" />
             </Button>
@@ -640,7 +640,7 @@ export default function RegistrationApprovalClient({
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => window.open(registration.engagement_proof_url, '_blank')}
+              onClick={() => window.open(registration.engagement_proof_url!, '_blank')}
             >
               <Eye className="w-4 h-4" />
             </Button>
@@ -683,7 +683,7 @@ export default function RegistrationApprovalClient({
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => window.open(registration.payment_proof_url, '_blank')}
+              onClick={() => window.open(registration.payment_proof_url!, '_blank')}
             >
               <Eye className="w-4 h-4" />
             </Button>

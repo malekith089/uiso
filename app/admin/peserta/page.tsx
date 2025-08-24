@@ -11,6 +11,15 @@ export interface Participant {
   education_level: string
   identity_number: string
   created_at: string
+  // --- START PERUBAHAN ---
+  phone: string | null
+  kelas: string | null
+  semester: string | null
+  tempat_lahir: string | null
+  tanggal_lahir: string | null
+  jenis_kelamin: string | null
+  alamat: string | null
+  // --- AKHIR PERUBAHAN ---
   registrations: Array<{
     id: string
     status: string
@@ -27,7 +36,8 @@ export default async function ParticipantManagement() {
 
   const { data: participants, error } = await supabase
     .from("profiles")
-    .select(`
+    .select(
+      `
       id,
       full_name,
       email,
@@ -35,6 +45,14 @@ export default async function ParticipantManagement() {
       education_level,
       identity_number,
       created_at,
+      phone,
+      kelas,
+      semester,
+      tempat_lahir,
+      tanggal_lahir,
+      jenis_kelamin,
+      alamat,
+
       registrations (
         id,
         status,
@@ -44,7 +62,8 @@ export default async function ParticipantManagement() {
           code
         )
       )
-    `)
+    `
+    )
     .neq("role", "admin")
     .order("created_at", { ascending: false })
 
@@ -61,7 +80,7 @@ export default async function ParticipantManagement() {
 
   return (
     <ParticipantManagementClient
-      participants={participants || []}
+      participants={(participants || []) as unknown as Participant[]}
       stats={{
         total: totalParticipants,
         approved: approvedCount,

@@ -131,7 +131,7 @@ export default function ProfilePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Profil Saya</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Profil Akun Saya</h1>
           <p className="text-gray-600">Kelola informasi profil dan data pribadi Anda</p>
         </div>
         <div className="flex gap-2">
@@ -211,7 +211,7 @@ export default function ProfilePage() {
                   <p className="text-xs text-gray-400">Email tidak dapat diubah</p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="school_institution">Sekolah/Institusi</Label>
+                  <Label htmlFor="school_institution">Sekolah/Universitas/Institusi</Label>
                   {isEditing ? (
                     <Input
                       id="school_institution"
@@ -223,23 +223,9 @@ export default function ProfilePage() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="education_level">Jenjang Pendidikan</Label>
-                  {isEditing ? (
-                    <Select
-                      value={formData.education_level || ""}
-                      onValueChange={(value) => handleInputChange("education_level", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SMA/Sederajat">SMA/Sederajat</SelectItem>
-                        <SelectItem value="Mahasiswa/i">Mahasiswa/i</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-sm font-medium p-2 bg-gray-50 rounded">{profile.education_level}</p>
-                  )}
+                  <Label htmlFor="email">Jenjang Pendidikan</Label>
+                  <p className="text-sm font-medium p-2 bg-gray-50 rounded text-gray-500">{profile.education_level}</p>
+                  <p className="text-xs text-gray-400">Jenjang tidak dapat diubah</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="identity_number">Nomor Identitas</Label>
@@ -295,21 +281,13 @@ export default function ProfilePage() {
                   <div className="space-y-2">
                     <Label htmlFor="semester">Semester</Label>
                     {isEditing ? (
-                      <Select
-                        value={formData.semester?.toString() || ""}
-                        onValueChange={(value) => handleInputChange("semester", Number.parseInt(value))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih semester" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map((sem) => (
-                            <SelectItem key={sem} value={sem.toString()}>
-                              Semester {sem}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        id="semester"
+                        type="number"
+                        value={formData.semester || ""}
+                        onChange={e => handleInputChange("semester", Number(e.target.value))}
+                        placeholder="Isi semester saat ini"
+                      />
                     ) : (
                       <p className="text-sm font-medium p-2 bg-gray-50 rounded">
                         {profile.semester ? `Semester ${profile.semester}` : "Belum diisi"}
