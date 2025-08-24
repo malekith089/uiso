@@ -345,7 +345,11 @@ export default function RegistrationApprovalClient({
                                   <TabsList className="grid w-full grid-cols-3">
                                     <TabsTrigger value="info">Informasi Peserta</TabsTrigger>
                                     <TabsTrigger value="files">Berkas</TabsTrigger>
-                                    {registration.team_members && <TabsTrigger value="team">Anggota Tim</TabsTrigger>}
+                                    {registration.team_members &&
+                                      registration.competitions.code !== "OSP" &&
+                                      registration.competitions.code !== "EGK" && (
+                                        <TabsTrigger value="team">Anggota Tim</TabsTrigger>
+                                    )}
                                   </TabsList>
 
                                   <TabsContent value="info" className="space-y-6">
@@ -500,14 +504,14 @@ export default function RegistrationApprovalClient({
                                         </CardHeader>
                                         <CardContent>
                                           <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center mb-2">
-                                            {registration.profiles.identity_card_url && (
+                                            {registration.identity_card_url && (
                                               <img
-                                                src={registration.profiles.identity_card_url || "/placeholder.svg"}
+                                                src={registration.identity_card_url || "/placeholder.svg"}
                                                 alt="Kartu Identitas"
                                                 className="w-full h-full object-cover rounded-lg"
                                               />
                                             )}
-                                            {!registration.profiles.identity_card_url && (
+                                            {!registration.identity_card_url && (
                                               <ImageIcon className="w-8 h-8 text-gray-400" />
                                             )}
                                           </div>
@@ -594,7 +598,9 @@ export default function RegistrationApprovalClient({
                                     </Card>
                                   </TabsContent>
 
-                                  {registration.team_members && (
+                                  {registration.team_members &&
+                                  registration.competitions.code !== "OSP" &&
+                                  registration.competitions.code !== "EGK" && (
                                     <TabsContent value="team" className="space-y-4">
                                       <div className="space-y-4">
                                         {registration.team_members.map((member: any, index: number) => (

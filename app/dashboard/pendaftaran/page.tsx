@@ -367,6 +367,13 @@ export default function PendaftaranPage() {
               {filteredCompetitions.map((competition) => {
                 const IconComponent = getCompetitionIcon(competition.code)
                 const isRegistered = registrations.some((reg) => reg.competition_id === competition.id)
+                const hasActiveRegistration =
+                userProfile?.education_level === "Mahasiswa/i" &&
+                registrations.some(
+                  (reg) => reg.status === "pending" || reg.status === "approved"
+                )
+                  const disabled =
+                isRegistered || hasActiveRegistration
 
                 return (
                   <Card key={competition.id} className="hover:shadow-lg transition-shadow">
@@ -397,10 +404,14 @@ export default function PendaftaranPage() {
 
                       <Button
                         className="w-full"
-                        disabled={isRegistered}
+                        disabled={disabled}
                         onClick={() => handleRegisterCompetition(competition)}
                       >
-                        {isRegistered ? "Sudah Terdaftar" : "Daftar"}
+                        {isRegistered
+                          ? "Sudah Terdaftar"
+                          : hasActiveRegistration
+                          ? "Sudah Mendaftar Lomba Lain"
+                          : "Daftar"}
                       </Button>
                     </CardContent>
                   </Card>
@@ -683,8 +694,8 @@ export default function PendaftaranPage() {
                     )}
 
                     <FileUpload
-                      label="Bukti Engagement"
-                      description="Upload bukti unggah twibon, repost poster, mengikuti sosial media Chemistry Fair, dll"
+                      label="Upload Berkas"
+                      description="Upload bukti unggah twibon, dan mengikuti sosial media Chemistry Fair (disatukan/merge)"
                       onUpload={(url) => handleInputChange("engagementProofUrl", url)}
                       value={formData.engagementProofUrl}
                       required
@@ -692,12 +703,31 @@ export default function PendaftaranPage() {
 
                     <div className="space-y-2">
                       <div className="bg-blue-50 p-3 rounded-lg mb-2">
-                        <p className="text-sm font-medium text-blue-900">Informasi Rekening:</p>
-                        <p className="text-sm text-blue-800">Bank BCA</p>
-                        <p className="text-sm text-blue-800">No. Rekening: 1234567890</p>
-                        <p className="text-sm text-blue-800">Atas Nama: UISO 2025</p>
-                        <p className="text-sm text-blue-800 mt-1">Biaya Pendaftaran: Rp 50.000</p>
-                      </div>
+  <p className="text-sm font-medium text-blue-900">Informasi Rekening:</p>
+  
+  <p className="text-sm text-blue-800 font-semibold mt-2">Olimpiade Sains Pelajar (OSP)</p>
+  <p className="text-sm text-blue-800">Bank Jago</p>
+  <p className="text-sm text-blue-800">No. Rekening: 103632691747</p>
+  <p className="text-sm text-blue-800">Atas Nama: Gloria Nova Angelina Siahaan</p>
+
+  <p className="text-sm text-blue-800 font-semibold mt-2"> Study Case Competition (SCC)</p>
+  <p className="text-sm text-blue-800">Bank Jago</p>
+  <p className="text-sm text-blue-800">No. Rekening: 105806823645</p>
+  <p className="text-sm text-blue-800">Atas Nama: Gloria Nova Angelina Siahaan</p>
+
+  <p className="text-sm text-blue-800 font-semibold mt-2">Esai Gagasan Kritis (EGK)</p>
+  <p className="text-sm text-blue-800">Bank Jago</p>
+  <p className="text-sm text-blue-800">No. Rekening: 107659308786</p>
+  <p className="text-sm text-blue-800">Atas Nama: Gloria Nova Angelina Siahaan</p>
+
+  <p className="text-sm text-blue-900 mt-3 font-semibold">Biaya Pendaftaran (Early Bird):</p>
+  <p className="text-sm font-bold text-green-700">
+    SMA: <span className="bg-green-100 px-2 py-0.5 rounded">Rp50.000,-</span>
+  </p>
+  <p className="text-sm font-bold text-green-700">
+    Mahasiswa: <span className="bg-green-100 px-2 py-0.5 rounded">Rp60.000,-</span>
+  </p>
+</div>
                       <FileUpload
                         label="Bukti Pembayaran"
                         onUpload={(url) => handleInputChange("paymentProofUrl", url)}

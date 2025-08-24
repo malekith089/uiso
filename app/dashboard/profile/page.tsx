@@ -282,9 +282,9 @@ export default function ProfilePage() {
                           <SelectValue placeholder="Pilih kelas" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="X">X</SelectItem>
-                          <SelectItem value="XI">XI</SelectItem>
-                          <SelectItem value="XII">XII</SelectItem>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="11">11</SelectItem>
+                          <SelectItem value="12">12</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (

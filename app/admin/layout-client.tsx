@@ -26,7 +26,7 @@ const sidebarItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Manajemen Peserta",
+    title: "Manajemen Akun",
     href: "/admin/peserta",
     icon: Users,
   },

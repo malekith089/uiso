@@ -30,11 +30,11 @@ const sidebarItems = [
     href: "/dashboard/pendaftaran",
     icon: FileText,
   },
-  {
-    title: "Submisi",
-    href: "/dashboard/submisi",
-    icon: Upload,
-  },
+  // {
+  //   title: "Submisi",
+  //   href: "/dashboard/submisi",
+  //   icon: Upload,
+  // },
 ]
 
 interface DashboardLayoutClientProps {

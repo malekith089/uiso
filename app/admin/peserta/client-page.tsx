@@ -246,8 +246,8 @@ export default function ParticipantManagementClient({
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Manajemen Peserta</h2>
-          <p className="text-muted-foreground">Kelola data peserta UISO 2025</p>
+          <h2 className="text-3xl font-bold tracking-tight">Manajemen Akun</h2>
+          <p className="text-muted-foreground">Kelola data akun UISO 2025</p>
         </div>
         <Button onClick={handleExportData} disabled={loading}>
           <Download className="mr-2 h-4 w-4" />
@@ -259,7 +259,7 @@ export default function ParticipantManagementClient({
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Peserta</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Akun</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -339,8 +339,8 @@ export default function ParticipantManagementClient({
       {/* Participants Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Data Peserta ({filteredParticipants.length})</CardTitle>
-          <CardDescription>Daftar lengkap peserta yang terdaftar</CardDescription>
+          <CardTitle>Data Akun ({filteredParticipants.length})</CardTitle>
+          <CardDescription>Daftar lengkap akun yang terdaftar</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">

@@ -14,11 +14,19 @@ export interface Registration {
   created_at: string
   updated_at: string
   profiles: {
+    id: string
     full_name: string
     email: string
     school_institution: string
     education_level: string
     identity_number: string
+    kelas?: string | null
+    semester?: number | null
+    tempat_lahir?: string | null
+    tanggal_lahir?: string | null
+    jenis_kelamin?: "Laki-laki" | "Perempuan" | null
+    alamat?: string | null
+    phone?: string | null
     identity_card_url?: string | null
   }
   competitions: {
@@ -31,6 +39,16 @@ export interface Registration {
     full_name: string
     identity_number: string
     identity_card_url: string | null
+    email: string
+    phone: string
+    school_institution: string
+    education_level: string
+    kelas: string | null
+    semester: number | null
+    tempat_lahir: string | null
+    tanggal_lahir: string | null
+    jenis_kelamin: "Laki-laki" | "Perempuan" | null
+    alamat: string | null
   }>
 }
 
@@ -44,11 +62,19 @@ export default async function RegistrationApprovalPage() {
       `
       *,
       profiles!inner (
+        id,
         full_name,
         email,
         school_institution,
         education_level,
-        identity_number
+        identity_number,
+        kelas,
+        semester,
+        tempat_lahir,
+        tanggal_lahir,
+        jenis_kelamin,
+        alamat,
+        phone
       ),
       competitions (
         name,
@@ -59,7 +85,17 @@ export default async function RegistrationApprovalPage() {
         id,
         full_name,
         identity_number,
-        identity_card_url
+        identity_card_url,
+        email,
+        phone,
+        school_institution,
+        education_level,
+        kelas,
+        semester,
+        tempat_lahir,
+        tanggal_lahir,
+        jenis_kelamin,
+        alamat
       )
     `
     )
@@ -71,19 +107,23 @@ export default async function RegistrationApprovalPage() {
   }
 
   // Get statistics
+  const today = new Date().toISOString().split("T")[0]
+
   const { count: todayApproved } = await supabase
     .from("registrations")
     .select("id", { count: "exact", head: true })
     .eq("status", "approved")
-    .gte("updated_at", new Date().toISOString().split("T")[0])
+    .gte("updated_at", today)
 
   const { count: todayRejected } = await supabase
     .from("registrations")
     .select("id", { count: "exact", head: true })
     .eq("status", "rejected")
-    .gte("updated_at", new Date().toISOString().split("T")[0])
+    .gte("updated_at", today)
 
-  const { count: totalRegistrations } = await supabase.from("registrations").select("id", { count: "exact", head: true })
+  const { count: totalRegistrations } = await supabase
+    .from("registrations")
+    .select("id", { count: "exact", head: true })
 
   return (
     <RegistrationApprovalClient
