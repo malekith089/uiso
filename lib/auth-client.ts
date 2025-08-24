@@ -11,6 +11,22 @@ export interface UserProfile {
   created_at: string
 }
 
+// Helper function to get the correct base URL
+function getBaseUrl(): string {
+  // Untuk production, gunakan environment variable
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL
+  }
+  
+  // Untuk development, gunakan window.location.origin
+  if (typeof window !== 'undefined') {
+    return window.location.origin
+  }
+  
+  // Fallback (tidak seharusnya sampai sini)
+  return 'http://localhost:3000'
+}
+
 // Client-side auth functions
 export function useSupabaseAuth() {
   const supabase = createClient()
@@ -49,9 +65,18 @@ export function useSupabaseAuth() {
   }
 
   const resetPassword = async (email: string) => {
+    const baseUrl = getBaseUrl()
+    const redirectUrl = `${baseUrl}/reset-password`
+    
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
+      redirectTo: redirectUrl
     })
+    return { data, error }
+  }
+
+  // Fungsi untuk handle auth callback
+  const handleAuthCallback = async () => {
+    const { data, error } = await supabase.auth.getSession()
     return { data, error }
   }
 
@@ -97,6 +122,7 @@ export function useSupabaseAuth() {
     signUp,
     signOut,
     resetPassword,
+    handleAuthCallback,
     getSession,
     getUser,
     getUserProfile

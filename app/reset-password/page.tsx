@@ -27,23 +27,49 @@ export default function ResetPasswordPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    // Check if we have valid session from the reset link
     const checkSession = async () => {
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession()
+      try {
+        // First check if we have URL parameters (code, token, etc.)
+        const code = searchParams.get('code')
+        const token = searchParams.get('token')
+        
+        console.log('URL params - code:', code, 'token:', token)
 
-      if (error || !session) {
+        if (code) {
+          // Exchange the code for a session
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+          
+          if (error) {
+            console.error('Code exchange error:', error)
+            setIsValidToken(false)
+            setError("Link reset password tidak valid atau sudah kedaluwarsa")
+            return
+          }
+
+          console.log('Code exchange successful:', data)
+          setIsValidToken(true)
+        } else {
+          // Check if we already have a valid session
+          const { data: { session }, error } = await supabase.auth.getSession()
+
+          if (error || !session) {
+            console.error('Session error:', error)
+            setIsValidToken(false)
+            setError("Link reset password tidak valid atau sudah kedaluwarsa")
+          } else {
+            console.log('Valid session found:', session)
+            setIsValidToken(true)
+          }
+        }
+      } catch (error) {
+        console.error('Auth check error:', error)
         setIsValidToken(false)
-        setError("Link reset password tidak valid atau sudah kedaluwarsa")
-      } else {
-        setIsValidToken(true)
+        setError("Terjadi kesalahan saat memverifikasi link reset password")
       }
     }
 
     checkSession()
-  }, [supabase.auth])
+  }, [supabase.auth, searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,17 +94,20 @@ export default function ResetPasswordPage() {
       })
 
       if (error) {
+        console.error('Update password error:', error)
         setError(error.message || "Gagal mengubah password")
         return
       }
 
+      console.log('Password updated successfully')
       setIsSuccess(true)
 
       // Redirect to login after 3 seconds
       setTimeout(() => {
-        router.push("/login")
+        router.push("/login?message=" + encodeURIComponent("Password berhasil diubah, silakan login dengan password baru"))
       }, 3000)
     } catch (error: any) {
+      console.error('Unexpected error:', error)
       setError(error.message || "Gagal mengubah password")
     } finally {
       setIsLoading(false)
@@ -138,7 +167,7 @@ export default function ResetPasswordPage() {
               </div>
               <CardTitle className="text-2xl font-bold text-red-600">Link Tidak Valid</CardTitle>
               <CardDescription className="text-gray-600">
-                Link reset password tidak valid atau sudah kedaluwarsa
+                {error || "Link reset password tidak valid atau sudah kedaluwarsa"}
               </CardDescription>
             </div>
           </CardHeader>
