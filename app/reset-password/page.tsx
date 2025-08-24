@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,10 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 
-function ResetPasswordContent() {
+export default function ResetPasswordPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -21,43 +21,116 @@ function ResetPasswordContent() {
   const [error, setError] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null)
+  const [debugInfo, setDebugInfo] = useState<any>({})
 
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // First check if we have URL parameters (code, token, etc.)
-        const code = searchParams.get('code')
-        const token = searchParams.get('token')
+        // Manual URL parsing to avoid SSR issues
+        const urlParams = new URLSearchParams(window.location.search)
+        const code = urlParams.get('code')
+        const token = urlParams.get('token')
+        const type = urlParams.get('type')
+        const errorParam = urlParams.get('error')
         
-        console.log('URL params - code:', code, 'token:', token)
+        // Debug logging
+        const debug = {
+          url: window.location.href,
+          params: window.location.search,
+          code: code,
+          token: token,
+          type: type,
+          error: errorParam,
+          timestamp: new Date().toISOString()
+        }
+        
+        console.log('=== RESET PASSWORD DEBUG ===', debug)
+        setDebugInfo(debug)
 
+        // Check for error in URL
+        if (errorParam) {
+          console.error('URL contains error:', errorParam)
+          setIsValidToken(false)
+          setError(`Error: ${errorParam}`)
+          return
+        }
+
+        // Handle different parameter types
         if (code) {
-          // Exchange the code for a session
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+          console.log('Found code parameter, attempting exchange...')
           
-          if (error) {
-            console.error('Code exchange error:', error)
+          try {
+            const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+            
+            if (error) {
+              console.error('Code exchange error:', error)
+              setIsValidToken(false)
+              setError(`Link tidak valid: ${error.message}`)
+              return
+            }
+            
+            console.log('Code exchange successful:', data)
+            setIsValidToken(true)
+            
+          } catch (exchangeError) {
+            console.error('Exchange code failed:', exchangeError)
             setIsValidToken(false)
-            setError("Link reset password tidak valid atau sudah kedaluwarsa")
+            setError("Gagal memproses link reset password")
             return
           }
-
-          console.log('Code exchange successful:', data)
-          setIsValidToken(true)
+          
+        } else if (token) {
+          console.log('Found token parameter, attempting verification...')
+          
+          // For token-based reset, we need to verify it's still valid
+          // This might be from an older Supabase implementation or custom setup
+          try {
+            // Try to use the token with verifyOtp
+            const { data, error } = await supabase.auth.verifyOtp({
+              token_hash: token,
+              type: 'recovery'
+            })
+            
+            if (error) {
+              console.error('Token verification error:', error)
+              setIsValidToken(false)
+              setError(`Token tidak valid: ${error.message}`)
+              return
+            }
+            
+            console.log('Token verification successful:', data)
+            setIsValidToken(true)
+            
+          } catch (tokenError) {
+            console.error('Token verification failed:', tokenError)
+            
+            // Fallback: Just check if we have a valid session
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+            
+            if (sessionError || !session) {
+              console.log('No valid session found')
+              setIsValidToken(false)
+              setError("Token reset password tidak valid atau sudah kedaluwarsa")
+            } else {
+              console.log('Valid session found, proceeding...')
+              setIsValidToken(true)
+            }
+          }
+          
         } else {
-          // Check if we already have a valid session
+          // No code or token, check existing session
+          console.log('No code/token found, checking existing session...')
           const { data: { session }, error } = await supabase.auth.getSession()
 
           if (error || !session) {
-            console.error('Session error:', error)
+            console.error('No valid session:', error)
             setIsValidToken(false)
-            setError("Link reset password tidak valid atau sudah kedaluwarsa")
+            setError("Link reset password tidak valid atau sudah kedaluwarsa. Silakan minta link baru.")
           } else {
-            console.log('Valid session found:', session)
+            console.log('Valid existing session found:', session.user?.id)
             setIsValidToken(true)
           }
         }
@@ -68,8 +141,11 @@ function ResetPasswordContent() {
       }
     }
 
-    checkSession()
-  }, [supabase.auth, searchParams])
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      checkSession()
+    }
+  }, [supabase.auth])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -127,10 +203,17 @@ function ResetPasswordContent() {
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-green-900/30 to-orange-900/40" />
 
         <Card className="relative z-10 w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-          <CardContent className="flex items-center justify-center p-8">
-            <div className="flex items-center gap-3">
+          <CardContent className="flex flex-col items-center justify-center p-8">
+            <div className="flex items-center gap-3 mb-4">
               <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
               <span className="text-gray-600">Memverifikasi link reset password...</span>
+            </div>
+            {/* Debug info */}
+            <div className="text-xs text-gray-400 bg-gray-50 p-2 rounded mt-2 w-full">
+              <p><strong>URL:</strong> {debugInfo.url?.substring(0, 50)}...</p>
+              <p><strong>Code:</strong> {debugInfo.code ? 'Present' : 'None'}</p>
+              <p><strong>Token:</strong> {debugInfo.token ? 'Present' : 'None'}</p>
+              <p><strong>Type:</strong> {debugInfo.type || 'None'}</p>
             </div>
           </CardContent>
         </Card>
@@ -177,6 +260,19 @@ function ResetPasswordContent() {
                 Silakan minta link reset password yang baru melalui halaman lupa password.
               </p>
             </div>
+
+            {/* Debug info for troubleshooting */}
+            <details className="text-xs bg-gray-50 p-2 rounded">
+              <summary className="cursor-pointer text-gray-500">Debug Info (Click to expand)</summary>
+              <div className="mt-2 space-y-1">
+                <p><strong>URL:</strong> {debugInfo.url}</p>
+                <p><strong>Code:</strong> {debugInfo.code || 'None'}</p>
+                <p><strong>Token:</strong> {debugInfo.token || 'None'}</p>
+                <p><strong>Type:</strong> {debugInfo.type || 'None'}</p>
+                <p><strong>Error:</strong> {debugInfo.error || 'None'}</p>
+                <p><strong>Timestamp:</strong> {debugInfo.timestamp}</p>
+              </div>
+            </details>
 
             <div className="flex flex-col gap-3">
               <Button asChild className="w-full">
@@ -360,32 +456,5 @@ function ResetPasswordContent() {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
-export default function ResetPasswordPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen relative flex items-center justify-center p-4">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: "url('/images/nature-landscape.png')",
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-green-900/30 to-orange-900/40" />
-
-        <Card className="relative z-10 w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-          <CardContent className="flex items-center justify-center p-8">
-            <div className="flex items-center gap-3">
-              <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-              <span className="text-gray-600">Loading...</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    }>
-      <ResetPasswordContent />
-    </Suspense>
   )
 }
