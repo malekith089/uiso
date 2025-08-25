@@ -117,10 +117,22 @@ export function handleError(error: unknown, context?: string): AppError {
 
 export function showErrorToast(error: unknown, context?: string) {
   const appError = handleError(error, context)
+  
+  // TAMBAHAN: Format error message jika ada multiple errors
+  let formattedMessage = appError.message;
+  
+  // Jika pesan mengandung newline, format sebagai list
+  if (formattedMessage.includes('\n')) {
+    const errors = formattedMessage.split('\n').filter(msg => msg.trim());
+    
+    if (errors.length > 1) {
+      formattedMessage = `Mohon lengkapi field berikut:\n${errors.map((error, index) => `${index + 1}. ${error}`).join('\n')}`;
+    }
+  }
 
   toast({
     title: "Terjadi Kesalahan",
-    description: appError.message,
+    description: formattedMessage,
     variant: "destructive",
   })
 
