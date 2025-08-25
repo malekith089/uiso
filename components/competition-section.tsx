@@ -3,41 +3,46 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 
-export function CompetitionSection() {
-  const [activeTab, setActiveTab] = useState("OSP")
+// Definisikan objek kompetisi di luar komponen agar tipenya bisa diekstrak
+const competitions = {
+  OSP: {
+    title: "Olimpiade Sains Pelajar",
+    description:
+      "Kompetisi yang menguji kemampuan siswa dalam bidang sains dasar meliputi Matematika, Fisika, Kimia, Biologi, Geografi dan Kebumian. Peserta akan menghadapi soal-soal yang menantang dan membutuhkan pemahaman konsep yang mendalam.",
+    details: [
+      "Kategori: SMA/MA sederajat",
+      "Jenis Lomba: Individu"
+    ],
+    image: "/placeholder.svg?height=400&width=600&text=OSP+Competition",
+  },
+  SCC: {
+    title: "Study Case Competition",
+    description:
+      "Kompetisi kreativitas sains yang mengajak peserta untuk menciptakan inovasi dan solusi kreatif terhadap permasalahan sehari-hari menggunakan pendekatan ilmiah dan teknologi terkini.",
+    details: [
+      "Kategori: Perguruan Tinggi/Sederajat",
+      "Jenis Lomba: Tim (2-3 orang)"
+    ],
+    image: "/placeholder.svg?height=400&width=600&text=SCC+Competition",
+  },
+  EGK: {
+    title: "Esai Gagasan Kritis",
+    description:
+      "Kompetisi yang fokus pada pengetahuan lingkungan dan keberlanjutan. Peserta akan diuji tentang pemahaman mereka terhadap isu-isu lingkungan global dan solusi ramah lingkungan.",
+    details: [
+      "Kategori: Perguruan Tinggi/Sederajat",
+      "Jenis Lomba: Individu"
+    ],
+    image: "/placeholder.svg?height=400&width=600&text=EGK+Competition",
+  },
+}
 
-  const competitions = {
-    OSP: {
-      title: "Olimpiade Sains Pelajar",
-      description:
-        "Kompetisi yang menguji kemampuan siswa dalam bidang sains dasar meliputi Matematika, Fisika, Kimia, Biologi, Geografi dan Kebumian. Peserta akan menghadapi soal-soal yang menantang dan membutuhkan pemahaman konsep yang mendalam.",
-      details: [
-        "Kategori: SMA/MA sederajat",
-        "Jenis Lomba: Individu"
-      ],
-      image: "/placeholder.svg?height=400&width=600&text=OSP+Competition",
-    },
-    SCC: {
-      title: "Study Case Competition",
-      description:
-        "Kompetisi kreativitas sains yang mengajak peserta untuk menciptakan inovasi dan solusi kreatif terhadap permasalahan sehari-hari menggunakan pendekatan ilmiah dan teknologi terkini.",
-      details: [
-        "Kategori: Perguruan Tinggi/Sederajat",
-        "Jenis Lomba: Tim (2-3 orang)"
-      ],
-      image: "/placeholder.svg?height=400&width=600&text=SCC+Competition",
-    },
-    EGK: {
-      title: "Esai Gagasan Kritis",
-      description:
-        "Kompetisi yang fokus pada pengetahuan lingkungan dan keberlanjutan. Peserta akan diuji tentang pemahaman mereka terhadap isu-isu lingkungan global dan solusi ramah lingkungan.",
-      details: [
-        "Kategori: Perguruan Tinggi/Sederajat",
-        "Jenis Lomba: Individu"
-      ],
-      image: "/placeholder.svg?height=400&width=600&text=EGK+Competition",
-    },
-  }
+// Buat tipe data spesifik untuk key dari objek competitions
+type CompetitionKey = keyof typeof competitions;
+
+export function CompetitionSection() {
+  // Gunakan tipe CompetitionKey untuk state activeTab
+  const [activeTab, setActiveTab] = useState<CompetitionKey>("OSP")
 
   return (
     <section id="lomba" className="py-20 bg-gradient-to-br from-primary/5 via-tertiary/5 to-accent/5">
@@ -55,7 +60,8 @@ export function CompetitionSection() {
           {/* Tab Buttons */}
           <div className="lg:col-span-1">
             <div className="space-y-1">
-              {Object.keys(competitions).map((key) => (
+              {/* Lakukan type assertion pada Object.keys */}
+              {(Object.keys(competitions) as CompetitionKey[]).map((key) => (
                 <Button
                   key={key}
                   onClick={() => setActiveTab(key)}
@@ -68,6 +74,7 @@ export function CompetitionSection() {
                 >
                   <div>
                     <div className="font-bold text-lg mb-1">{key}</div>
+                    {/* Sekarang TypeScript tahu 'key' adalah key yang valid */}
                     <div className="text-sm opacity-80">{competitions[key].title}</div>
                   </div>
                 </Button>
@@ -80,11 +87,13 @@ export function CompetitionSection() {
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="p-8">
                 <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-4">
+                  {/* Dan juga tahu 'activeTab' adalah key yang valid */}
                   {competitions[activeTab].title}
                 </h3>
                 <p className="text-gray-600 mb-16 leading-relaxed">{competitions[activeTab].description}</p>
                 <div className="space-y-3">
-                  {competitions[activeTab].details.map((detail, index) => (
+                  {/* Beri tipe eksplisit pada parameter map */}
+                  {competitions[activeTab].details.map((detail: string, index: number) => (
                     <div key={index} className="flex items-center gap-3">
                       <div className="w-2 h-2 bg-warning rounded-full"></div>
                       <span className="text-gray-700">{detail}</span>

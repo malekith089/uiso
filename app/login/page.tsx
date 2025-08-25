@@ -9,8 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
 import Image from "next/image"
-import { signIn, getSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { useSupabaseAuth } from "@/lib/auth-client"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const { signIn, getUserProfile } = useSupabaseAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,25 +29,21 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const result = await signIn("credentials", {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
-      })
+      const { data, error } = await signIn(formData.email, formData.password)
 
-      if (result?.error) {
+      if (error) {
         setError("Email atau password salah")
-      } else if (result?.ok) {
-        // Get the session to check user role
-        const session = await getSession()
-        
-        if (session?.user?.role === "admin") {
-          router.push("/admin")
+        return
+      }
+
+      if (data.user) {
+        // Check user role to determine redirect
+        const profile = await getUserProfile()
+        if (profile?.role === 'admin') {
+          router.push('/admin')
         } else {
-          router.push("/dashboard")
+          router.push('/dashboard')
         }
-        
-        // Force page refresh to update auth state
         router.refresh()
       }
     } catch (error: any) {

@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
 import Image from "next/image"
-import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import { useSupabaseAuth } from "@/lib/auth-client"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -29,6 +28,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const { signUp } = useSupabaseAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,27 +41,27 @@ export default function RegisterPage() {
       return
     }
 
-    const supabase = createClient()
-
     try {
-      const { error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
-          data: {
-            full_name: formData.fullName,
-            school_institution: formData.school,
-            education_level: formData.level === "mahasiswa" ? "Mahasiswa/i" : "SMA/Sederajat",
-            identity_number: formData.identityNumber,
-          },
-        },
-      })
+      const { data, error } = await signUp(
+        formData.email,
+        formData.password,
+        {
+          full_name: formData.fullName,
+          school_institution: formData.school,
+          education_level: formData.level === "mahasiswa" ? "Mahasiswa/i" : "SMA/Sederajat",
+          identity_number: formData.identityNumber,
+        }
+      )
 
-      if (error) throw error
+      if (error) {
+        setError(error.message || "Registrasi gagal")
+        return
+      }
 
-      alert("Registrasi akun berhasil! Silakan login.")
-      router.push("/login")
+      if (data.user) {
+        alert("Registrasi berhasil! Silakan login.")
+        router.push("/login")
+      }
     } catch (error: any) {
       setError(error.message || "Registrasi gagal")
     } finally {

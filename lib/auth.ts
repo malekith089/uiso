@@ -1,126 +1,63 @@
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import { createClient } from "@/lib/supabase/server";
-import type { User } from "next-auth";
-import type { JWT } from "next-auth/jwt";
+// Server-side auth functions only
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import type { User } from '@supabase/supabase-js'
 
-// The User and JWT types are already extended in your types/next-auth.d.ts file
+export interface UserProfile {
+  id: string
+  email: string
+  full_name: string
+  school_institution: string
+  education_level: string
+  identity_number: string
+  role: string
+  created_at: string
+}
 
-/**
- * NextAuth v5 (Auth.js) configuration for email/password authentication only
- */
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  pages: {
-    signIn: '/login',
-  },
+export async function getUser(): Promise<User | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return user
+}
+
+export async function getUserProfile(): Promise<UserProfile | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
   
-  callbacks: {
-    authorized({ auth, request }) {
-      const { nextUrl } = request;
-      const isLoggedIn = !!auth?.user;
-      const isProtectedPath = nextUrl.pathname.startsWith('/dashboard') || nextUrl.pathname.startsWith('/admin');
+  if (!user) return null
 
-      if (isProtectedPath) {
-        if (isLoggedIn) return true;
-        return false; // Redirect to login
-      } else if (isLoggedIn) {
-        // Redirect logged-in users away from auth pages
-        const isPublicAuthPath = nextUrl.pathname.startsWith('/login') || nextUrl.pathname.startsWith('/register');
-        if (isPublicAuthPath) {
-          return Response.redirect(new URL('/dashboard', nextUrl));
-        }
-      }
-      return true;
-    },
-    
-    async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.sub!;
-        session.user.role = token.role || 'user';
-        session.user.school = token.school || '';
-        session.user.education_level = token.education_level || '';
-        session.user.identity_number = token.identity_number || '';
-      }
-      return session;
-    },
-    
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = user.role;
-        token.school = user.school;
-        token.education_level = user.education_level;
-        token.identity_number = user.identity_number;
-      }
-      return token;
-    }
-  },
-  
-  providers: [
-    Credentials({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
 
-        try {
-          const supabase = await createClient();
-          
-          // Sign in with Supabase Auth
-          const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-            email: credentials.email as string,
-            password: credentials.password as string,
-          });
+  if (!profile) return null
 
-          if (authError || !authData.user) {
-            console.error('Auth error:', authError);
-            return null;
-          }
+  return {
+    id: profile.id,
+    email: user.email!,
+    full_name: profile.full_name,
+    school_institution: profile.school_institution,
+    education_level: profile.education_level,
+    identity_number: profile.identity_number,
+    role: profile.role || 'user',
+    created_at: profile.created_at
+  }
+}
 
-          // Get additional user data from your custom table (if you have one)
-          // If you store additional user info in a separate table
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', authData.user.id)
-            .single();
+export async function requireAuth() {
+  const user = await getUser()
+  if (!user) {
+    redirect('/login')
+  }
+  return user
+}
 
-          // If you don't have a profiles table, you can use the auth user data directly
-          if (profileError) {
-            console.log('No profile found, using auth data only');
-            return {
-              id: authData.user.id,
-              email: authData.user.email!,
-              name: authData.user.user_metadata?.full_name || authData.user.email!,
-              role: 'user',
-              school: '',
-              education_level: '',
-              identity_number: '',
-            };
-          }
-
-          return {
-            id: authData.user.id,
-            email: authData.user.email!,
-            name: profile?.full_name || authData.user.email!,
-            role: profile?.role || 'user',
-            school: profile?.school_institution || '',
-            education_level: profile?.education_level || '',
-            identity_number: profile?.identity_number || '',
-          };
-        } catch (error) {
-          console.error('Authorization error:', error);
-          return null;
-        }
-      }
-    })
-  ],
-  
-  session: {
-    strategy: "jwt",
-  },
-});
+export async function requireAdmin() {
+  const profile = await getUserProfile()
+  if (!profile || profile.role !== 'admin') {
+    redirect('/dashboard')
+  }
+  return profile
+}

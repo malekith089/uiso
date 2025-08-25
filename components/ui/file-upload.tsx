@@ -6,46 +6,43 @@ import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Upload, X, CheckCircle } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Upload, X, FileIcon, ImageIcon } from "lucide-react"
+import { showErrorToast, showSuccessToast } from "@/lib/error-handler"
 
 interface FileUploadProps {
   label: string
-  accept?: string
+  description?: string
   onUpload: (url: string) => void
   value?: string
   required?: boolean
-  description?: string
+  accept?: string
+  maxSize?: number // in MB
 }
 
 export function FileUpload({
   label,
-  accept = "image/*,.pdf",
+  description,
   onUpload,
   value,
   required = false,
-  description,
+  accept = "image/png,image/jpeg,.pdf",
+  maxSize = 2,
 }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError("File size must be less than 5MB")
+  const handleFileSelect = async (file: File) => {
+    if (file.size > maxSize * 1024 * 1024) {
+      showErrorToast(new Error(`File terlalu besar. Maksimal ${maxSize}MB`))
       return
     }
 
     setIsUploading(true)
-    setUploadError(null)
-
     try {
       const formData = new FormData()
       formData.append("file", file)
-      formData.append("folder", "uiso-2025/documents")
 
       const response = await fetch("/api/upload", {
         method: "POST",
@@ -53,21 +50,42 @@ export function FileUpload({
       })
 
       if (!response.ok) {
-        throw new Error("Upload failed")
+        throw new Error("Upload gagal")
       }
 
-      const result = await response.json()
-
-      if (result.success && result.url) {
-        onUpload(result.url)
-      } else {
-        setUploadError(result.error || "Upload failed")
-      }
+      const data = await response.json()
+      onUpload(data.url)
+      showSuccessToast("File berhasil diupload")
     } catch (error) {
-      console.error("Upload error:", error)
-      setUploadError("Upload failed. Please try again.")
+      showErrorToast(error, "handleFileSelect")
     } finally {
       setIsUploading(false)
+    }
+  }
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true)
+    } else if (e.type === "dragleave") {
+      setDragActive(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelect(e.dataTransfer.files[0])
+    }
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileSelect(e.target.files[0])
     }
   }
 
@@ -78,55 +96,80 @@ export function FileUpload({
     }
   }
 
+  const getFileIcon = (filename: string) => {
+    const extension = filename.split(".").pop()?.toLowerCase()
+    if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension || "")) {
+      return <ImageIcon className="w-4 h-4" />
+    }
+    return <FileIcon className="w-4 h-4" />
+  }
+
   return (
     <div className="space-y-2">
       <Label className="text-sm font-medium">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
       </Label>
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+      {description && <p className="text-xs text-gray-500">{description}</p>}
 
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-        {value ? (
-          <div className="flex items-center justify-between p-2 bg-green-50 rounded-md">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <span className="text-sm text-green-700">File uploaded successfully</span>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleRemove}
-              className="text-red-600 hover:text-red-700"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        ) : (
-          <div className="text-center">
+      {!value ? (
+        <Card
+          className={`border-2 border-dashed transition-colors ${
+            dragActive ? "border-primary bg-primary/5" : "border-gray-300 hover:border-gray-400"
+          }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
+          <CardContent className="flex flex-col items-center justify-center py-8 px-4">
+            <Upload className="w-8 h-8 text-gray-400 mb-2" />
+            <p className="text-sm text-gray-600 text-center mb-2">
+              Drag & drop file di sini atau{" "}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-primary hover:underline"
+                disabled={isUploading}
+              >
+                pilih file
+              </button>
+            </p>
+            <p className="text-xs text-gray-500">
+              Maksimal {maxSize}MB • {accept.replace(/\*/g, "").replace(/\./g, "").toUpperCase()}
+            </p>
             <Input
               ref={fileInputRef}
               type="file"
               accept={accept}
-              onChange={handleFileSelect}
-              disabled={isUploading}
+              onChange={handleInputChange}
               className="hidden"
-              id={`file-${label.replace(/\s+/g, "-").toLowerCase()}`}
+              disabled={isUploading}
             />
-            <Label htmlFor={`file-${label.replace(/\s+/g, "-").toLowerCase()}`} className="cursor-pointer">
-              <div className="flex flex-col items-center space-y-2">
-                <Upload className="h-8 w-8 text-gray-400" />
-                <div className="text-sm text-gray-600">
-                  {isUploading ? "Uploading..." : "Click to upload or drag and drop"}
-                </div>
-                <div className="text-xs text-gray-500">PNG, JPG, PDF up to 5MB</div>
-              </div>
-            </Label>
-          </div>
-        )}
-      </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border">
+          <CardContent className="flex items-center justify-between p-3">
+            <div className="flex items-center gap-2">
+              {getFileIcon(value)}
+              <span className="text-sm font-medium truncate max-w-[200px]">
+                {value.split("/").pop() || "File uploaded"}
+              </span>
+            </div>
+            <Button type="button" variant="ghost" size="sm" onClick={handleRemove} disabled={isUploading}>
+              <X className="w-4 h-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
-      {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
+      {isUploading && (
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+          Mengupload file...
+        </div>
+      )}
     </div>
   )
 }

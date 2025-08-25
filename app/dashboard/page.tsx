@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Calendar, CheckCircle, Clock, AlertTriangle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
@@ -26,68 +27,72 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
-  useEffect(() => {
-    fetchUserData()
-  }, [])
+  const timeline = useMemo(
+    () => [
+      {
+        date: "25 Jan 2025",
+        event: "Batas Pendaftaran OSP",
+        status: "upcoming",
+        type: "deadline",
+      },
+      {
+        date: "28 Jan 2025",
+        event: "Batas Pendaftaran EGK & SCC",
+        status: "upcoming",
+        type: "deadline",
+      },
+      {
+        date: "15 Feb 2025",
+        event: "Pelaksanaan OSP (CBT)",
+        status: "upcoming",
+        type: "competition",
+      },
+      {
+        date: "20 Feb 2025",
+        event: "Deadline Submisi EGK & SCC",
+        status: "upcoming",
+        type: "submission",
+      },
+    ],
+    [],
+  )
 
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser()
 
       if (user) {
-        // Fetch user profile
-        const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-        setUserProfile(profile)
+        const [profileResult, registrationsResult] = await Promise.all([
+          supabase.from("profiles").select("*").eq("id", user.id).single(),
+          supabase
+            .from("registrations")
+            .select(
+              `
+              *,
+              competitions (*)
+            `,
+            )
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false }),
+        ])
 
-        // Fetch user registrations
-        const { data: regs } = await supabase
-          .from("registrations")
-          .select(`
-            *,
-            competitions (*)
-          `)
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-
-        setRegistrations(regs || [])
+        setUserProfile(profileResult.data)
+        setRegistrations(registrationsResult.data || [])
       }
     } catch (error) {
       console.error("Error fetching user data:", error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
 
-  const timeline = [
-    {
-      date: "25 Jan 2025",
-      event: "Batas Pendaftaran OSP",
-      status: "upcoming",
-      type: "deadline",
-    },
-    {
-      date: "28 Jan 2025",
-      event: "Batas Pendaftaran EGK & SCC",
-      status: "upcoming",
-      type: "deadline",
-    },
-    {
-      date: "15 Feb 2025",
-      event: "Pelaksanaan OSP (CBT)",
-      status: "upcoming",
-      type: "competition",
-    },
-    {
-      date: "20 Feb 2025",
-      event: "Deadline Submisi EGK & SCC",
-      status: "upcoming",
-      type: "submission",
-    },
-  ]
+  useEffect(() => {
+    fetchUserData()
+  }, [fetchUserData])
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = useCallback((status: string) => {
     switch (status) {
       case "approved":
         return <Badge variant="default">Disetujui</Badge>
@@ -96,9 +101,9 @@ export default function DashboardPage() {
       default:
         return <Badge variant="secondary">Menunggu</Badge>
     }
-  }
+  }, [])
 
-  const getSubmissionButton = (competition: any, status: string) => {
+  const getSubmissionButton = useCallback((competition: any, status: string) => {
     if (status !== "approved") return null
 
     if (competition.code === "OSP") {
@@ -118,12 +123,55 @@ export default function DashboardPage() {
         </Link>
       )
     }
-  }
+  }, [])
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <Skeleton className="h-32 w-full rounded-lg" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-4 w-48" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-lg border">
+                  <Skeleton className="h-5 w-5 rounded-full" />
+                  <div className="flex-1 space-y-1">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <Skeleton className="h-6 w-16" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-4 w-48" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="p-4 rounded-lg border bg-gray-50">
+                    <div className="flex items-center justify-between mb-2">
+                      <Skeleton className="h-5 w-48" />
+                      <Skeleton className="h-6 w-20" />
+                    </div>
+                    <div className="space-y-1">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-40" />
+                    </div>
+                    <Skeleton className="h-8 w-full mt-3" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
@@ -140,44 +188,27 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Timeline Lomba */}
-        {/* <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Timeline Lomba
-            </CardTitle>
-            <CardDescription>Jadwal penting kompetisi UISO 2025</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {timeline.map((item, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 rounded-lg border">
-                  <div className="flex-shrink-0">
-                    {item.status === "completed" && <CheckCircle className="h-5 w-5 text-green-500" />}
-                    {item.status === "upcoming" && item.type === "deadline" && (
-                      <AlertTriangle className="h-5 w-5 text-orange-500" />
-                    )}
-                    {item.status === "upcoming" && item.type !== "deadline" && (
-                      <Clock className="h-5 w-5 text-blue-500" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{item.event}</p>
-                    <p className="text-xs text-gray-500">{item.date}</p>
-                  </div>
-                  <Badge variant={item.status === "completed" ? "default" : "secondary"}>
-                    {item.status === "completed" ? "Selesai" : "Mendatang"}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card> */}
+      {/* Permanent Alert for Profile Completion */}
+      <Card className="border-yellow-500 bg-yellow-50">
+        <CardHeader className="flex flex-row items-start gap-4 space-y-0 p-4">
+          <AlertTriangle className="h-6 w-6 text-yellow-700 flex-shrink-0" />
+          <div className="flex-1">
+            <CardTitle className="text-base text-yellow-800">Lengkapi Profil Anda</CardTitle>
+            <CardDescription className="text-yellow-700 mt-1">
+              Harap pastikan profil Anda sudah lengkap. Kelengkapan data wajib bagi peserta OSP dan EGK. Ada pada pojok kanan atas atau Button di samping
+            </CardDescription>
+          </div>
+          <Link href="/dashboard/profile">
+            <Button variant="outline" size="sm" className="bg-transparent text-yellow-800 border-yellow-600 hover:bg-yellow-100">
+              Lengkapi
+            </Button>
+          </Link>
+        </CardHeader>
+      </Card>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status Pendaftaran */}
-        {/* <Card>
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5" />
@@ -211,7 +242,7 @@ export default function DashboardPage() {
               </div>
             )}
           </CardContent>
-        </Card> */}
+        </Card>
       </div>
     </div>
   )
