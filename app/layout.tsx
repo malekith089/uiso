@@ -10,8 +10,7 @@ export const metadata: Metadata = {
   description: "UI Science Olympiad 2025",
   icons: {
     icon: "/images/uiso-logo.png",
-  },
-    generator: 'v0.app'
+  }
 }
 
 export default function RootLayout({
