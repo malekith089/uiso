@@ -86,11 +86,11 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-accent" />
-                <span className="text-gray-300">TBA</span>
+                <span className="text-gray-300">Amirah (081808833176)</span>
               </div>
               <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-accent" />
-                <span className="text-gray-300">TBA</span>
+                <Phone className="w-5 h-5 text-accent" />
+                <span className="text-gray-300">Moza (082286880294)</span>
               </div>
             </div>
           </div>
