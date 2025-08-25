@@ -105,6 +105,7 @@ export default function PendaftaranPage() {
     ] as TeamMember[],
   })
 
+  
   const supabase = createClient()
 
   useEffect(() => {
@@ -159,74 +160,148 @@ export default function PendaftaranPage() {
     }
   }
 
-  const filteredCompetitions = competitions.filter((comp) => userProfile?.education_level === comp.target_level)
+    const filteredCompetitions = competitions.filter((comp) => userProfile?.education_level === comp.target_level)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedCompetition || !userProfile) return
+    const validateForm = () => {
+    const errors: string[] = [];
 
-    setIsLoading(true)
+    // Validasi untuk kompetisi tim
+    if (selectedCompetition?.participant_type === "Team") {
+      if (!formData.teamName.trim()) {
+        errors.push("Nama tim wajib diisi");
+      }
 
-    try {
-      await withRetry(async () => {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-        if (!user) throw new Error("User not authenticated")
-
-        const { data: registration, error: regError } = await supabase
-          .from("registrations")
-          .insert({
-            user_id: user.id,
-            competition_id: selectedCompetition.id,
-            team_name: selectedCompetition.participant_type === "Team" ? formData.teamName : null,
-            team_size: selectedCompetition.participant_type === "Team" ? teamSize : 1,
-            identity_card_url: formData.identityCardUrl,
-            engagement_proof_url: formData.engagementProofUrl,
-            payment_proof_url: formData.paymentProofUrl,
-            status: "pending",
-          })
-          .select()
-          .single()
-
-        if (regError) throw regError
-
-        if (selectedCompetition.participant_type === "Team" && registration) {
-          const teamMembersData = formData.teamMembers.slice(0, teamSize).map((member, index) => ({
-            registration_id: registration.id,
-            full_name: member.name,
-            identity_number: member.identityNumber,
-            identity_card_url: member.identityCardUrl,
-            email: member.email,
-            phone: member.phone,
-            school_institution: member.schoolInstitution,
-            education_level: member.educationLevel,
-            kelas: member.kelas,
-            semester: member.semester ? Number.parseInt(member.semester) : null,
-            tempat_lahir: member.tempatLahir,
-            tanggal_lahir: member.tanggalLahir,
-            jenis_kelamin: member.jenisKelamin,
-            alamat: member.alamat,
-            member_order: index + 1,
-          }))
-
-          const { error: membersError } = await supabase.from("team_members").insert(teamMembersData)
-
-          if (membersError) throw membersError
+      // Validasi setiap anggota tim
+      const activeMembers = formData.teamMembers.slice(0, teamSize);
+      activeMembers.forEach((member, index) => {
+        const memberNum = index + 1;
+        
+        if (!member.name.trim()) {
+          errors.push(`Nama lengkap anggota ${memberNum} wajib diisi`);
         }
-      })
-
-      showSuccessToast("Pendaftaran berhasil! Menunggu persetujuan admin.")
-      setShowForm(false)
-      setSelectedCompetition(null)
-      resetForm()
-      fetchRegistrations()
-    } catch (error) {
-      showErrorToast(error, "handleSubmit")
-    } finally {
-      setIsLoading(false)
+        if (!member.email.trim()) {
+          errors.push(`Email anggota ${memberNum} wajib diisi`);
+        }
+        if (!member.identityNumber.trim()) {
+          errors.push(`Nomor identitas anggota ${memberNum} wajib diisi`);
+        }
+        if (!member.phone.trim()) {
+          errors.push(`Nomor HP anggota ${memberNum} wajib diisi`);
+        }
+        if (!member.schoolInstitution.trim()) {
+          errors.push(`Asal institusi anggota ${memberNum} wajib diisi`);
+        }
+        if (!member.semester.trim()) {
+          errors.push(`Semester anggota ${memberNum} wajib diisi`);
+        }
+        if (!member.tempatLahir.trim()) {
+          errors.push(`Tempat lahir anggota ${memberNum} wajib diisi`);
+        }
+        if (!member.tanggalLahir) {
+          errors.push(`Tanggal lahir anggota ${memberNum} wajib diisi`);
+        }
+        if (!member.jenisKelamin) {
+          errors.push(`Jenis kelamin anggota ${memberNum} wajib diisi`);
+        }
+        if (!member.alamat.trim()) {
+          errors.push(`Alamat anggota ${memberNum} wajib diisi`);
+        }
+        if (!member.identityCardUrl) {
+          errors.push(`Kartu identitas dan pas foto anggota ${memberNum} wajib diupload`);
+        }
+      });
     }
+
+    // Validasi file upload
+    if (selectedCompetition?.participant_type === "Individual" && !formData.identityCardUrl) {
+      errors.push("Kartu identitas wajib diupload");
+    }
+    
+    if (!formData.engagementProofUrl) {
+      errors.push("Berkas wajib diupload");
+    }
+    
+    if (!formData.paymentProofUrl) {
+      errors.push("Bukti pembayaran wajib diupload");
+    }
+
+    return errors;
+  };
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!selectedCompetition || !userProfile) return;
+
+  // TAMBAHAN: Jalankan validasi
+  const validationErrors = validateForm();
+  if (validationErrors.length > 0) {
+    const errorMessage = validationErrors.join('\n');
+    showErrorToast(new Error(errorMessage), "validasi");
+    return;
   }
+
+  setIsLoading(true);
+
+  try {
+    await withRetry(async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) throw new Error("User not authenticated")
+
+      const { data: registration, error: regError } = await supabase
+        .from("registrations")
+        .insert({
+          user_id: user.id,
+          competition_id: selectedCompetition.id,
+          team_name: selectedCompetition.participant_type === "Team" ? formData.teamName : null,
+          team_size: selectedCompetition.participant_type === "Team" ? teamSize : 1,
+          identity_card_url: formData.identityCardUrl,
+          engagement_proof_url: formData.engagementProofUrl,
+          payment_proof_url: formData.paymentProofUrl,
+          status: "pending",
+        })
+        .select()
+        .single()
+
+      if (regError) throw regError
+
+      if (selectedCompetition.participant_type === "Team" && registration) {
+        const teamMembersData = formData.teamMembers.slice(0, teamSize).map((member, index) => ({
+          registration_id: registration.id,
+          full_name: member.name,
+          identity_number: member.identityNumber,
+          identity_card_url: member.identityCardUrl,
+          email: member.email,
+          phone: member.phone,
+          school_institution: member.schoolInstitution,
+          education_level: member.educationLevel,
+          kelas: member.kelas,
+          semester: member.semester ? Number.parseInt(member.semester) : null,
+          tempat_lahir: member.tempatLahir,
+          tanggal_lahir: member.tanggalLahir,
+          jenis_kelamin: member.jenisKelamin,
+          alamat: member.alamat,
+          member_order: index + 1,
+        }))
+
+        const { error: membersError } = await supabase.from("team_members").insert(teamMembersData)
+
+        if (membersError) throw membersError
+      }
+    })
+
+    showSuccessToast("Pendaftaran berhasil! Menunggu persetujuan admin.")
+    setShowForm(false)
+    setSelectedCompetition(null)
+    resetForm()
+    fetchRegistrations()
+  } catch (error) {
+    showErrorToast(error, "handleSubmit")
+  } finally {
+    setIsLoading(false)
+  }
+};
 
   const resetForm = () => {
     setFormData({
@@ -589,6 +664,7 @@ export default function PendaftaranPage() {
                                   value={member.tempatLahir}
                                   onChange={(e) => handleTeamMemberChange(index, "tempatLahir", e.target.value)}
                                   placeholder="Contoh: Jakarta"
+                                  required
                                 />
                               </div>
                               <div className="space-y-2">
@@ -597,6 +673,7 @@ export default function PendaftaranPage() {
                                   type="date"
                                   value={member.tanggalLahir}
                                   onChange={(e) => handleTeamMemberChange(index, "tanggalLahir", e.target.value)}
+                                  required
                                 />
                               </div>
                               <div className="space-y-2">
@@ -621,6 +698,7 @@ export default function PendaftaranPage() {
                                   onChange={(e) => handleTeamMemberChange(index, "alamat", e.target.value)}
                                   placeholder="Masukkan alamat lengkap"
                                   rows={2}
+                                  required
                                 />
                               </div>
                             </div>

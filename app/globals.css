@@ -60,3 +60,30 @@
   display: inline-block;
   animation: scroll-left 30s linear infinite;
 }
+
+/* Toast Improvements */
+[data-radix-toast-viewport] {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 2147483647;
+  margin: 0;
+  list-style: none;
+  max-width: 100vw;
+  padding: 25px;
+}
+
+/* Ensure toast has solid background */
+.group.destructive {
+  background-color: rgb(254 242 242) !important; /* red-50 */
+  color: rgb(127 29 29) !important; /* red-900 */
+  border-color: rgb(254 202 202) !important; /* red-200 */
+}
+
+/* Better text formatting for multi-line descriptions */
+[data-radix-toast-description] {
+  white-space: pre-line;
+  line-height: 1.4;
+  max-width: 350px;
+  word-wrap: break-word;
+}
