@@ -12,7 +12,7 @@ export function CountdownSection() {
   })
 
   useEffect(() => {
-    const targetDate = new Date("2025-08-23T20:00:00").getTime()
+    const targetDate = new Date("2025-08-30T23:59:00").getTime()
 
     const timer = setInterval(() => {
       const now = new Date().getTime()
@@ -35,7 +35,7 @@ export function CountdownSection() {
     <section id="beranda" className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-85"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-80"
         style={{
           backgroundImage: "url(/images/arctic-landscape.png)",
         }}
@@ -47,11 +47,11 @@ export function CountdownSection() {
       <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6"> {/* Hapus text-shadow dari sini */}
           <span className="bg-gradient-to-r from-accent to-warning bg-clip-text text-transparent [text-stroke:5px_rgba(0,0,0,0.6)]">
-            Countdown!
+            UISO 2025
           </span>
           <br />
           <span className="text-white [text-shadow:0_4px_8px_rgba(0,0,0,0.5)]"> {/* Pindahkan text-shadow ke sini */}
-            Menuju UISO 2025!
+            Close Early Bird Registration!
           </span>
         </h1>
 

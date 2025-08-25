@@ -21,13 +21,13 @@ export function Navbar() {
   }, [])
 
   const navItems = [
-    { name: "Beranda", href: "#beranda" },
+    // { name: "Beranda", href: "#beranda" },
     { name: "Tentang", href: "#tentang" },
     { name: "Lomba", href: "#lomba" },
     { name: "Rangkaian Acara", href: "#rangkaian-acara" },
     { name: "Timeline", href: "#timeline" },
-    { name: "Testimoni", href: "#testimoni" },
-    { name: "Partner", href: "#partner" },
+    // { name: "Testimoni", href: "#testimoni" },
+    // { name: "Partner", href: "#partner" },
   ]
 
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
