@@ -42,7 +42,7 @@ export default function ForgotPasswordPage() {
       <div className="min-h-screen relative flex items-center justify-center p-4">
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('/images/nature-landscape.png')" }}
+          style={{ backgroundImage: "url('/images/nature-landscape.webp')" }}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-green-900/30 to-orange-900/40" />
         <Card className="relative z-10 w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen relative flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/images/nature-landscape.png')" }}
+        style={{ backgroundImage: "url('/images/nature-landscape.webp')" }}
       />
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-green-900/30 to-orange-900/40" />
       <Card className="relative z-10 w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm">

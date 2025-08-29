@@ -63,11 +63,13 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: "url('/images/nature-landscape.png')",
-        }}
+      <Image
+        src="/images/nature-landscape.webp"
+        alt="Nature Landscape Background"
+        fill // Menggantikan layout="fill"
+        quality={75}
+        priority
+        className="object-cover z-0" // Menggantikan objectFit="cover"
       />
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-green-900/30 to-orange-900/40" />
 

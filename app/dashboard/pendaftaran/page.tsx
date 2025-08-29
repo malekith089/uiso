@@ -35,6 +35,7 @@ interface Registration {
   team_size: number
   status: string
   created_at: string
+  selected_subject_id?: string
   competitions: Competition
 }
 
@@ -54,6 +55,13 @@ interface TeamMember {
   alamat: string
 }
 
+interface CompetitionSubject {
+  id: string
+  name: string
+  code: string
+  description: string
+}
+
 export default function PendaftaranPage() {
   const [showForm, setShowForm] = useState(false)
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null)
@@ -63,6 +71,80 @@ export default function PendaftaranPage() {
   const [teamSize, setTeamSize] = useState<number>(2)
   const [isLoading, setIsLoading] = useState(false)
 
+  const [ospSubjects, setOspSubjects] = useState<CompetitionSubject[]>([
+  { id: '1', name: 'Matematika', code: 'MAT', description: 'Olimpiade Matematika' },
+  { id: '2', name: 'Fisika', code: 'FIS', description: 'Olimpiade Fisika' },
+  { id: '3', name: 'Kimia', code: 'KIM', description: 'Olimpiade Kimia' },
+  { id: '4', name: 'Biologi', code: 'BIO', description: 'Olimpiade Biologi' },
+  { id: '5', name: 'Geografi', code: 'GEO', description: 'Olimpiade Geografi' },
+  { id: '6', name: 'Kebumian', code: 'BUM', description: 'Olimpiade Kebumian' }
+  ])
+  const [selectedSubject, setSelectedSubject] = useState<string>('')
+  const [showSubjectModal, setShowSubjectModal] = useState(false)
+  const [currentRegistration, setCurrentRegistration] = useState<Registration | null>(null)
+
+  const copyTwibbonCaption = async () => {
+  const userName = userProfile?.full_name || '[Nama]'
+  const userInstitution = userProfile?.school_institution || '[Sekolah/Universitas]'
+  
+  const caption = `Halo, Olympiads!
+Perkenalkan, saya ${userName} dari ${userInstitution}.
+Bergabung dalam UI Science Olympiad 2025 bukan hanya soal kompetisi, tetapi juga wadah untuk mengasah kemampuan, menyalurkan ide, serta menunjukkan kepedulian terhadap isu lingkungan.
+
+Melalui ajang ini, saya ingin berkontribusi dengan langkah kecil yang bermakna, sekaligus membuktikan bahwa generasi muda mampu menghadirkan solusi progresif bagi masa depan.
+
+Tahun ini, UISO hadir dengan tema:
+"Langkah Kecil untuk Dunia yang Berseri"
+
+UISO 2025 menghadirkan berbagai cabang kompetisi menarik, antara lain:
+- Olimpiade Matematika
+- Olimpiade Fisika
+- Olimpiade Kimia
+- Olimpiade Biologi
+- Olimpiade Geografi
+- Olimpiade Kebumian
+- Esai Gagasan Kreatif
+- Study Case Competition
+Dengan total hadiah Rp 70.500.000,00 menantimu!
+
+Ikuti perjalanan UISO 2025 dan mari bersama-sama mewujudkan semangat Satu Aksi Sejuta Prestasi.
+Pendaftaran dapat diakses melalui: uiso.net
+
+Pantau media sosial kami untuk informasi lebih lanjut:
+Instagram: @uiso.2025
+TikTok: @uiso.2025
+X: @uiso_2025
+LinkedIn: @ui science olympiads
+Youtube: @uiso.2025
+
+Narahubung:
+Amirah (081808833176 / LINE: amirahjalwairdina_)
+Moza (082286880294 / LINE: mz1924)
+
+UISO 2025
+Langkah Kecil untuk Dunia yang Berseri
+#SatuAksiSejutaPrestasi
+
+Departemen Keilmuan
+BEM FMIPA UI 2025
+Semarakkan Perjuangan Biru Hitam
+#MenyalakanSemarakKeilmuan`
+
+  try {
+    await navigator.clipboard.writeText(caption)
+    showSuccessToast("Caption berhasil disalin ke clipboard!")
+  } catch (error) {
+    // Fallback untuk browser yang tidak support clipboard API
+    const textArea = document.createElement('textarea')
+    textArea.value = caption
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+    showSuccessToast("Caption berhasil disalin!")
+  }
+}
+
   const [formData, setFormData] = useState({
     teamName: "",
     school: "",
@@ -70,6 +152,7 @@ export default function PendaftaranPage() {
     phone: "",
     identityCardUrl: "",
     engagementProofUrl: "",
+    selectedOspSubject:"",
     paymentProofUrl: "",
     teamMembers: [
       {
@@ -165,6 +248,10 @@ export default function PendaftaranPage() {
     const validateForm = () => {
     const errors: string[] = [];
 
+    if (selectedCompetition?.code === "OSP" && !formData.selectedOspSubject) {
+      errors.push("Bidang lomba OSP wajib dipilih");
+    }
+
     // Validasi untuk kompetisi tim
     if (selectedCompetition?.participant_type === "Team") {
       if (!formData.teamName.trim()) {
@@ -259,6 +346,7 @@ export default function PendaftaranPage() {
           identity_card_url: formData.identityCardUrl,
           engagement_proof_url: formData.engagementProofUrl,
           payment_proof_url: formData.paymentProofUrl,
+          selected_subject_id: selectedCompetition.code === "OSP" ? formData.selectedOspSubject : null,
           status: "pending",
         })
         .select()
@@ -312,6 +400,7 @@ export default function PendaftaranPage() {
       identityCardUrl: "",
       engagementProofUrl: "",
       paymentProofUrl: "",
+      selectedOspSubject: "",
       teamMembers: [
         {
           name: "",
@@ -418,6 +507,31 @@ export default function PendaftaranPage() {
     }
   }
 
+const handleSubjectSelection = async (registrationId: string, subjectId: string) => {
+  try {
+    const { error } = await supabase
+      .from('registrations')
+      .update({ selected_subject_id: subjectId })
+      .eq('id', registrationId)
+
+    if (error) throw error
+
+    showSuccessToast('Bidang kompetisi berhasil dipilih!')
+    setShowSubjectModal(false)
+    setSelectedSubject('')
+    setCurrentRegistration(null)
+    fetchRegistrations()
+  } catch (error) {
+    showErrorToast(error, 'handleSubjectSelection')
+  }
+}
+
+const openSubjectSelection = (registration: Registration) => {
+  setCurrentRegistration(registration)
+  setSelectedSubject(registration.selected_subject_id || '')
+  setShowSubjectModal(true)
+}
+
   return (
     <ErrorBoundary>
       <div className="space-y-6">
@@ -508,18 +622,45 @@ export default function PendaftaranPage() {
                       <TableHead>Kompetisi</TableHead>
                       <TableHead>Kategori</TableHead>
                       <TableHead>Status</TableHead>
+                      {(userProfile?.education_level === 'SMA' || registrations.some(reg => reg.competitions.code === 'OSP')) && (
+                        <TableHead>Bidang Kompetisi</TableHead>
+                      )}
                       <TableHead>Tanggal Daftar</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {registrations.map((registration) => (
-                      <TableRow key={registration.id}>
-                        <TableCell className="font-medium">{registration.competitions.name}</TableCell>
-                        <TableCell>{registration.competitions.participant_type}</TableCell>
-                        <TableCell>{getStatusBadge(registration.status)}</TableCell>
-                        <TableCell>{new Date(registration.created_at).toLocaleDateString("id-ID")}</TableCell>
-                      </TableRow>
-                    ))}
+                    <TableRow key={registration.id}>
+                      <TableCell className="font-medium">{registration.competitions.name}</TableCell>
+                      <TableCell>{registration.competitions.participant_type}</TableCell>
+                      <TableCell>{getStatusBadge(registration.status)}</TableCell>
+                      {(userProfile?.education_level === 'SMA' || registrations.some(reg => reg.competitions.code === 'OSP')) && (
+                        <TableCell>
+                          {registration.competitions.code === 'OSP' ? (
+                            <div className="space-y-2">
+                              {registration.selected_subject_id ? (
+                                <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
+                                  {ospSubjects.find(s => s.id === registration.selected_subject_id)?.name || 'Belum dipilih'}
+                                </Badge>
+                              ) : (
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => openSubjectSelection(registration)}
+                                  className="bg-orange-500 hover:bg-orange-600"
+                                >
+                                  Pilih Bidang
+                                </Button>
+                              )}
+                            </div>
+                          ) : (
+                            '-'
+                          )}
+                        </TableCell>
+                      )}
+                      
+                      <TableCell>{new Date(registration.created_at).toLocaleDateString("id-ID")}</TableCell>
+                    </TableRow>
+                  ))}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -547,6 +688,26 @@ export default function PendaftaranPage() {
                       <p className="text-xs text-gray-500">Email dari akun terdaftar</p>
                     </div>
                   </div>
+
+                  {selectedCompetition.code === 'OSP' && (
+                    <div className="space-y-2">
+                      <Label>Bidang Lomba</Label>
+                      <Select
+                        value={formData.selectedOspSubject}
+                        onValueChange={(value) => handleInputChange("selectedOspSubject", value)}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih bidang lomba OSP" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ospSubjects.map(subject => (
+                            <SelectItem key={subject.id} value={subject.id}>{subject.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   {selectedCompetition.participant_type === "Team" && (
                     <div className="space-y-4">
@@ -788,7 +949,6 @@ export default function PendaftaranPage() {
                             <button 
                               type="button"
                               onClick={() => {
-                                // Google Drive direct download URL format
                                 const twibbonUrl = 'https://drive.google.com/file/d/18LHw2FBslJKG26qye6SM0fe9WcdmnYe7/view?usp=drive_link'
                                 const link = document.createElement('a')
                                 link.href = twibbonUrl
@@ -805,13 +965,23 @@ export default function PendaftaranPage() {
                               </svg>
                               Twibbon
                             </button>
+
+                            <button 
+                              type="button"
+                              onClick={copyTwibbonCaption}
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors duration-200 shadow-md hover:shadow-lg"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                              Copy Caption Twibbon
+                            </button>
                             
                             <button 
                               type="button"
                               onClick={() => {
                                 let bookletUrl = ''
                                 
-                                // Different booklet for each competition
                                 switch (selectedCompetition?.code) {
                                   case 'OSP':
                                     bookletUrl = 'https://drive.google.com/drive/folders/1ViMxUnQdPiabSu1iWKvbrt055eN7VjOK'
@@ -894,6 +1064,90 @@ export default function PendaftaranPage() {
           </div>
         )}
       </div>
+{showSubjectModal && currentRegistration && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Pilih Bidang Kompetisi</CardTitle>
+        <CardDescription>
+          Pilih bidang untuk {currentRegistration.competitions.name}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Warning Card */}
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-amber-900 mb-1">
+                Perhatian: Pilihan Tidak Dapat Diubah
+              </h4>
+              <p className="text-sm text-amber-800 leading-relaxed">
+                Setelah Anda memilih bidang kompetisi, pilihan tersebut <strong>tidak dapat diubah lagi</strong>. 
+                Pastikan Anda sudah yakin dengan bidang yang akan dipilih. Pertimbangkan kemampuan dan minat Anda 
+                dengan matang sebelum memutuskan.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          {ospSubjects.map((subject) => (
+            <label 
+              key={subject.id}
+              className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                selectedSubject === subject.id 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name="subject"
+                value={subject.id}
+                checked={selectedSubject === subject.id}
+                onChange={(e) => setSelectedSubject(e.target.value)}
+                className="mr-3"
+              />
+              <div>
+                <p className="font-medium">{subject.name}</p>
+                <p className="text-sm text-gray-600">{subject.description}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+        
+        <div className="flex gap-2 pt-4">
+          <Button 
+            onClick={() => {
+              if (selectedSubject && currentRegistration) {
+                handleSubjectSelection(currentRegistration.id, selectedSubject)
+              }
+            }}
+            disabled={!selectedSubject}
+            className="flex-1"
+          >
+            Simpan Pilihan
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setShowSubjectModal(false)
+              setSelectedSubject('')
+              setCurrentRegistration(null)
+            }}
+          >
+            Batal
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+)}
     </ErrorBoundary>
   )
 }

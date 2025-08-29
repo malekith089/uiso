@@ -88,7 +88,7 @@ export default function RegisterPage() {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: "url('/images/nature-landscape.png')",
+          backgroundImage: "url('/images/nature-landscape.webp')",
         }}
       />
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-green-900/30 to-orange-900/40" />

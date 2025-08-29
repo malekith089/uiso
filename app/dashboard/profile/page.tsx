@@ -240,7 +240,7 @@ export default function ProfilePage() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">No. HP</Label>
+                  <Label htmlFor="phone">No. HP (Aktif WhatsApp)</Label>
                   {isEditing ? (
                     <Input
                       id="phone"
