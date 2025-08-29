@@ -63,6 +63,60 @@ export default function PendaftaranPage() {
   const [teamSize, setTeamSize] = useState<number>(2)
   const [isLoading, setIsLoading] = useState(false)
 
+  const copyTwibbonCaption = async () => {
+  const userName = userProfile?.full_name || '[Nama]'
+  const userInstitution = userProfile?.school_institution || '[Sekolah/Universitas]'
+  
+  const caption = `Halo, Olympiads!
+Perkenalkan, saya ${userName} dari ${userInstitution}.
+Bergabung dalam UI Science Olympiad 2025 bukan hanya soal kompetisi, tetapi juga wadah untuk mengasah kemampuan, menyalurkan ide, serta menunjukkan kepedulian terhadap isu lingkungan.
+Melalui ajang ini, saya ingin berkontribusi dengan langkah kecil yang bermakna, sekaligus membuktikan bahwa generasi muda mampu menghadirkan solusi progresif bagi masa depan.
+Tahun ini, UISO hadir dengan tema:
+"Langkah Kecil untuk Dunia yang Berseri"
+UISO 2025 menghadirkan berbagai cabang kompetisi menarik, antara lain:
+- Olimpiade Matematika
+- Olimpiade Fisika
+- Olimpiade Kimia
+- Olimpiade Biologi
+- Olimpiade Geografi
+- Olimpiade Kebumian
+- Esai Gagasan Kreatif
+- Study Case Competition
+Dengan total hadiah Rp 70.500.000,00 menantimu!
+Ikuti perjalanan UISO 2025 dan mari bersama-sama mewujudkan semangat Satu Aksi Sejuta Prestasi.
+Pendaftaran dapat diakses melalui: uiso.net
+Pantau media sosial kami untuk informasi lebih lanjut:
+Instagram: @uiso.2025
+TikTok: @uiso.2025
+X: @uiso_2025
+LinkedIn: @ui science olympiads
+Youtube: @uiso.2025
+Narahubung:
+Amirah (081808833176 / LINE: amirahjalwairdina_)
+Moza (082286880294 / LINE: mz1924)
+UISO 2025
+Langkah Kecil untuk Dunia yang Berseri
+#SatuAksiSejutaPrestasi
+Departemen Keilmuan
+BEM FMIPA UI 2025
+Semarakkan Perjuangan Biru Hitam
+#MenyalakanSemarakKeilmuan`
+
+  try {
+    await navigator.clipboard.writeText(caption)
+    showSuccessToast("Caption berhasil disalin ke clipboard!")
+  } catch (error) {
+    // Fallback untuk browser yang tidak support clipboard API
+    const textArea = document.createElement('textarea')
+    textArea.value = caption
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+    showSuccessToast("Caption berhasil disalin!")
+  }
+}
+
   const [formData, setFormData] = useState({
     teamName: "",
     school: "",
@@ -788,7 +842,6 @@ export default function PendaftaranPage() {
                             <button 
                               type="button"
                               onClick={() => {
-                                // Google Drive direct download URL format
                                 const twibbonUrl = 'https://drive.google.com/file/d/18LHw2FBslJKG26qye6SM0fe9WcdmnYe7/view?usp=drive_link'
                                 const link = document.createElement('a')
                                 link.href = twibbonUrl
@@ -805,13 +858,23 @@ export default function PendaftaranPage() {
                               </svg>
                               Twibbon
                             </button>
+
+                            <button 
+                              type="button"
+                              onClick={copyTwibbonCaption}
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors duration-200 shadow-md hover:shadow-lg"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                              Copy Caption Twibbon
+                            </button>
                             
                             <button 
                               type="button"
                               onClick={() => {
                                 let bookletUrl = ''
                                 
-                                // Different booklet for each competition
                                 switch (selectedCompetition?.code) {
                                   case 'OSP':
                                     bookletUrl = 'https://drive.google.com/drive/folders/1ViMxUnQdPiabSu1iWKvbrt055eN7VjOK'

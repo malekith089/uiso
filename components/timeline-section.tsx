@@ -38,7 +38,8 @@ export function TimelineSection() {
     {
       date: "10 November 2025",
       title: "Pengumuman Peserta Lolos",
-      description: "Pengumuman peserta yang lolos seleksi Olimpiade Sains Pelajar, Study Case Competition, dan Esai Gagasan Kritis.",
+      description:
+        "Pengumuman peserta yang lolos seleksi Olimpiade Sains Pelajar, Study Case Competition, dan Esai Gagasan Kritis.",
     },
     {
       date: "21 November 2025",
@@ -65,8 +66,7 @@ export function TimelineSection() {
       title: "Grand Closing & Awarding Day",
       description: "Penutupan resmi dan pemberian penghargaan UI Science Olympiad 2025.",
     },
-  ];
-
+  ]
 
   return (
     <section id="timeline" className="py-20 bg-white">
@@ -80,31 +80,55 @@ export function TimelineSection() {
           </p>
         </div>
 
-        <div className="relative">
-          {/* Timeline Line */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-gradient-to-b from-primary via-accent to-secondary"></div>
+        {/* Mobile Timeline */}
+        <div className="block md:hidden max-w-sm mx-auto">
+          <div className="relative">
+            <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-accent to-secondary transform -translate-x-1/2"></div>
 
-          <div className="space-y-12">
-            {timelineEvents.map((event, index) => (
-              <div key={index} className={`flex items-center ${index % 2 === 0 ? "flex-row" : "flex-row-reverse"}`}>
-                <div className={`w-1/2 ${index % 2 === 0 ? "pr-8 text-right" : "pl-8 text-left"}`}>
-                  <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-primary hover:shadow-xl transition-shadow duration-300">
-                    <div className="text-accent font-bold text-sm mb-2">{event.date}</div>
-                    <h3 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-3">
+            <div className="space-y-6">
+              {timelineEvents.map((event, index) => (
+                <div key={index} className="relative flex justify-center">
+                  <div className="bg-white border-l-4 border-primary rounded-xl shadow-lg p-6 w-full max-w-xs text-center hover:shadow-xl transition-shadow duration-300">
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
                       {event.title}
                     </h3>
-                    <p className="text-gray-600">{event.description}</p>
+                    <p className="text-accent font-bold text-sm mb-2">{event.date}</p>
+                    <p className="text-gray-600 text-sm">{event.description}</p>
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
-                {/* Timeline Dot */}
-                <div className="relative z-10">
-                  <div className="w-4 h-4 bg-gradient-to-br from-primary to-accent rounded-full border-4 border-white shadow-lg"></div>
+        {/* Desktop Timeline */}
+        <div className="hidden md:block max-w-4xl mx-auto">
+          <div className="relative">
+            {/* Timeline Line */}
+            <div className="absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-gradient-to-b from-primary via-accent to-secondary"></div>
+
+            <div className="space-y-12">
+              {timelineEvents.map((event, index) => (
+                <div key={index} className={`flex items-center ${index % 2 === 0 ? "flex-row" : "flex-row-reverse"}`}>
+                  <div className={`w-1/2 ${index % 2 === 0 ? "pr-8 text-right" : "pl-8 text-left"}`}>
+                    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-primary hover:shadow-xl transition-shadow duration-300">
+                      <div className="text-accent font-bold text-sm mb-2">{event.date}</div>
+                      <h3 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-3">
+                        {event.title}
+                      </h3>
+                      <p className="text-gray-600">{event.description}</p>
+                    </div>
+                  </div>
+
+                  {/* Timeline Dot */}
+                  <div className="relative z-10">
+                    <div className="w-4 h-4 bg-gradient-to-br from-primary to-accent rounded-full border-4 border-white shadow-lg"></div>
+                  </div>
+
+                  <div className="w-1/2"></div>
                 </div>
-
-                <div className="w-1/2"></div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>

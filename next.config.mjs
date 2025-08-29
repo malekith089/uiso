@@ -7,7 +7,16 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['placeholder.svg'],
+    // Hapus 'domains' dan ganti dengan 'remotePatterns'
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'placeholder.svg', // Sesuaikan dengan hostname sumber gambar
+        port: '',
+        pathname: '/**',
+      },
+      // Tambahkan pattern lain jika ada sumber gambar eksternal lainnya
+    ],
     formats: ['image/webp', 'image/avif'],
   },
 }
