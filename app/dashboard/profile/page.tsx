@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { User, Save, Edit } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
 interface ExtendedProfile {
   id: string
@@ -35,6 +36,7 @@ export default function ProfilePage() {
 
   const { toast } = useToast()
   const supabase = createClient()
+  const router = useRouter()
 
   useEffect(() => {
     fetchProfile()
@@ -99,6 +101,9 @@ export default function ProfilePage() {
         title: "Berhasil",
         description: "Profil berhasil diperbarui",
       })
+
+      router.refresh()
+
     } catch (error) {
       console.error("Error updating profile:", error)
       toast({
