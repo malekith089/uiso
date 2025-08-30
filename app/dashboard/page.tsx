@@ -98,28 +98,6 @@ export default function DashboardPage() {
     }
   }, [])
 
-  const getSubmissionButton = useCallback((competition: any, status: string) => {
-    if (status !== "approved") return null
-
-    if (competition.code === "OSP") {
-      return (
-        <Link href="/dashboard/submisi">
-          <Button size="sm" className="w-full">
-            Akses CBT
-          </Button>
-        </Link>
-      )
-    } else {
-      return (
-        <Link href="/dashboard/submisi">
-          <Button size="sm" variant="outline" className="w-full bg-transparent">
-            Upload Karya
-          </Button>
-        </Link>
-      )
-    }
-  }, [])
-
     if (loading) {
     return (
       <div className="space-y-6">
@@ -259,7 +237,6 @@ export default function DashboardPage() {
                       <p>Jenis: {registration.competitions.participant_type}</p>
                       <p>Tanggal Daftar: {new Date(registration.created_at).toLocaleDateString("id-ID")}</p>
                     </div>
-                    <div className="mt-3">{getSubmissionButton(registration.competitions, registration.status)}</div>
                   </div>
                 ))}
               </div>
