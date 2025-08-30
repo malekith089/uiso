@@ -9,10 +9,12 @@ import { Calendar, CheckCircle, Clock, AlertTriangle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 
+// Perbarui interface ini
 interface Registration {
   id: string
   status: string
   created_at: string
+  selected_subject_id: string | null // <-- Tambahan
   competitions: {
     name: string
     code: string
@@ -22,93 +24,68 @@ interface Registration {
 }
 
 export default function DashboardPage() {
+  // Tambahkan state baru di sini
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [userProfile, setUserProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [isProfileComplete, setIsProfileComplete] = useState(false)
+  const [isProfileComplete, setIsProfileComplete] = useState(true) // Default true
+  const [needsOspSelection, setNeedsOspSelection] = useState(false) // <-- State baru
   const supabase = createClient()
-  const checkProfileCompleteness = (profile: any) => {
-    if (!profile) return false
-    const requiredFields = [
-      "full_name",
-      "school_institution",
-      "identity_number",
-      "phone",
-      "tempat_lahir",
-      "tanggal_lahir",
-      "jenis_kelamin",
-      "alamat",
-    ]
-    return requiredFields.every((field) => profile[field])
-}
-
-  const timeline = useMemo(
-    () => [
-      {
-        date: "25 Jan 2025",
-        event: "Batas Pendaftaran OSP",
-        status: "upcoming",
-        type: "deadline",
-      },
-      {
-        date: "28 Jan 2025",
-        event: "Batas Pendaftaran EGK & SCC",
-        status: "upcoming",
-        type: "deadline",
-      },
-      {
-        date: "15 Feb 2025",
-        event: "Pelaksanaan OSP (CBT)",
-        status: "upcoming",
-        type: "competition",
-      },
-      {
-        date: "20 Feb 2025",
-        event: "Deadline Submisi EGK & SCC",
-        status: "upcoming",
-        type: "submission",
-      },
-    ],
-    [],
-  )
-
-  const fetchUserData = useCallback(async () => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (user) {
-        const [profileResult, registrationsResult] = await Promise.all([
-          supabase.from("profiles").select("*").eq("id", user.id).single(),
-          supabase
-            .from("registrations")
-            .select(
-              `
-              *,
-              competitions (*)
-            `,
-            )
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false }),
-        ])
-
-        setUserProfile(profileResult.data)
-        if (profileResult.data) {
-            setIsProfileComplete(checkProfileCompleteness(profileResult.data))
-        }
-        setRegistrations(registrationsResult.data || [])
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error)
-    } finally {
-      setLoading(false)
-    }
-  }, [supabase])
 
   useEffect(() => {
-    fetchUserData()
-  }, [fetchUserData])
+    const fetchData = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) throw new Error("User not found")
+
+        // --- Logika Cek Profil ---
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single()
+
+        if (profileError) throw profileError
+
+        setUserProfile(profileData)
+        const requiredFields = [
+          "full_name", "school_institution", "identity_number", "phone",
+          "tempat_lahir", "tanggal_lahir", "jenis_kelamin", "alamat",
+        ]
+        const isComplete = requiredFields.every((field) => profileData?.[field])
+        setIsProfileComplete(isComplete)
+        // --- Akhir Logika Cek Profil ---
+
+
+        // --- Logika Cek Pendaftaran OSP ---
+        const { data: registrationData, error: registrationError } = await supabase
+          .from("registrations")
+          .select("*, competitions(*)")
+          .order("created_at", { ascending: false })
+
+        if (registrationError) throw registrationError
+        
+        setRegistrations(registrationData || [])
+
+        if (registrationData) {
+          const needsSelection = registrationData.some(
+            (reg: Registration) => reg.competitions.code === "OSP" && !reg.selected_subject_id,
+          )
+          setNeedsOspSelection(needsSelection)
+        }
+        // --- Akhir Logika Cek Pendaftaran OSP ---
+
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [supabase])
 
   const getStatusBadge = useCallback((status: string) => {
     switch (status) {
@@ -143,7 +120,7 @@ export default function DashboardPage() {
     }
   }, [])
 
-  if (loading) {
+    if (loading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-32 w-full rounded-lg" />
@@ -205,8 +182,8 @@ export default function DashboardPage() {
           <p>Institusi: {userProfile?.school_institution}</p>
         </div>
       </div>
-
-      {/* Permanent Alert for Profile Completion */}
+      
+      {/* Kartu Kelengkapan Profil (Sekarang sudah benar) */}
         {!isProfileComplete && (
             <Card className="border-yellow-500 bg-yellow-50">
                 <CardHeader className="flex flex-row items-start gap-4 space-y-0 p-4">
@@ -226,6 +203,32 @@ export default function DashboardPage() {
             </Card>
         )}
 
+      {/* KARTU KONDISIONAL UNTUK PEMILIHAN BIDANG OSP */}
+      {needsOspSelection && (
+        <Card className="border-yellow-400 bg-yellow-50">
+          <CardHeader>
+            <div className="flex items-start gap-4">
+              <div className="mt-1">
+                <AlertTriangle className="h-6 w-6 text-yellow-700" />
+              </div>
+              <div>
+                <CardTitle className="text-lg text-yellow-900">Tindakan Diperlukan</CardTitle>
+                <CardDescription className="text-yellow-800">
+                  Anda terdaftar pada Olimpiade Sains Pelajar (OSP) namun belum memilih bidang lomba. Segera pilih
+                  bidang lomba Anda pada <strong>Pendaftaran Saya</strong> untuk menyelesaikan pendaftaran.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard/pendaftaran">
+              <Button className="bg-yellow-600 hover:bg-yellow-700">Pilih Bidang Lomba Sekarang</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sisa konten halaman Anda */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status Pendaftaran */}
         <Card>
