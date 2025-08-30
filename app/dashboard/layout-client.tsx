@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -18,6 +18,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 const sidebarItems = [
   {
@@ -48,6 +49,7 @@ export default function DashboardLayoutClient({ children, user, profile }: Dashb
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -74,23 +76,41 @@ export default function DashboardLayoutClient({ children, user, profile }: Dashb
 
       {/* Navigation */}
       <nav className="flex-1 space-y-2 p-4">
-        {sidebarItems.map((item) => {
-          const isActive = pathname === item.href
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                isActive ? "bg-primary text-primary-foreground" : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-              }`}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.title}
-            </Link>
-          )
-        })}
-      </nav>
+  <TooltipProvider delayDuration={100}>
+    {sidebarItems.map((item) => {
+      const isActive = pathname === item.href
+      const isRegistrationLink = item.href === "/dashboard/pendaftaran"
+      const isDisabled = isRegistrationLink && !isProfileComplete
+
+      const linkClasses = `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+        isActive ? "bg-primary text-primary-foreground" : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+      } ${isDisabled ? "cursor-not-allowed opacity-50" : ""}`
+
+      if (isDisabled) {
+        return (
+          <Tooltip key={item.href}>
+            <TooltipTrigger asChild>
+              <div className={linkClasses}>
+                <item.icon className="h-4 w-4" />
+                {item.title}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Lengkapi profil Anda untuk membuka menu ini.</p>
+            </TooltipContent>
+          </Tooltip>
+        )
+      }
+
+      return (
+        <Link key={item.href} href={item.href} className={linkClasses} onClick={() => setSidebarOpen(false)}>
+          <item.icon className="h-4 w-4" />
+          {item.title}
+        </Link>
+      )
+    })}
+  </TooltipProvider>
+</nav>
 
       {/* User Section */}
       <div className="border-t p-4">
@@ -112,6 +132,30 @@ export default function DashboardLayoutClient({ children, user, profile }: Dashb
       </div>
     </div>
   )
+
+  const [isProfileComplete, setIsProfileComplete] = useState(false)
+    useEffect(() => {
+    const checkProfileCompleteness = () => {
+        if (!profile) {
+            setIsProfileComplete(false)
+            return
+        }
+        const requiredFields = [
+            "full_name",
+            "school_institution",
+            "identity_number",
+            "phone",
+            "tempat_lahir",
+            "tanggal_lahir",
+            "jenis_kelamin",
+            "alamat",
+        ]
+        const isComplete = requiredFields.every((field) => profile[field])
+        setIsProfileComplete(isComplete)
+    }
+
+    checkProfileCompleteness()
+  }, [profile])
 
   return (
     <div className="flex h-screen bg-gray-50">

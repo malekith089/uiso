@@ -25,7 +25,22 @@ export default function DashboardPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [userProfile, setUserProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [isProfileComplete, setIsProfileComplete] = useState(false)
   const supabase = createClient()
+  const checkProfileCompleteness = (profile: any) => {
+    if (!profile) return false
+    const requiredFields = [
+      "full_name",
+      "school_institution",
+      "identity_number",
+      "phone",
+      "tempat_lahir",
+      "tanggal_lahir",
+      "jenis_kelamin",
+      "alamat",
+    ]
+    return requiredFields.every((field) => profile[field])
+}
 
   const timeline = useMemo(
     () => [
@@ -79,6 +94,9 @@ export default function DashboardPage() {
         ])
 
         setUserProfile(profileResult.data)
+        if (profileResult.data) {
+            setIsProfileComplete(checkProfileCompleteness(profileResult.data))
+        }
         setRegistrations(registrationsResult.data || [])
       }
     } catch (error) {
@@ -189,22 +207,24 @@ export default function DashboardPage() {
       </div>
 
       {/* Permanent Alert for Profile Completion */}
-      <Card className="border-yellow-500 bg-yellow-50">
-        <CardHeader className="flex flex-row items-start gap-4 space-y-0 p-4">
-          <AlertTriangle className="h-6 w-6 text-yellow-700 flex-shrink-0" />
-          <div className="flex-1">
-            <CardTitle className="text-base text-yellow-800">Lengkapi Profil Anda</CardTitle>
-            <CardDescription className="text-yellow-700 mt-1">
-              Harap pastikan profil Anda sudah lengkap. Kelengkapan data wajib bagi peserta OSP dan EGK. Ada pada pojok kanan atas atau Button di samping
-            </CardDescription>
-          </div>
-          <Link href="/dashboard/profile">
-            <Button variant="outline" size="sm" className="bg-transparent text-yellow-800 border-yellow-600 hover:bg-yellow-100">
-              Lengkapi
-            </Button>
-          </Link>
-        </CardHeader>
-      </Card>
+        {!isProfileComplete && (
+            <Card className="border-yellow-500 bg-yellow-50">
+                <CardHeader className="flex flex-row items-start gap-4 space-y-0 p-4">
+                    <AlertTriangle className="h-6 w-6 text-yellow-700 flex-shrink-0" />
+                    <div className="flex-1">
+                        <CardTitle className="text-base text-yellow-800">Lengkapi Profil Anda</CardTitle>
+                        <CardDescription className="text-yellow-700 mt-1">
+                            Harap pastikan profil Anda sudah lengkap. Kelengkapan data wajib bagi peserta. Ada pada pojok kanan atas atau Button di samping
+                        </CardDescription>
+                    </div>
+                    <Link href="/dashboard/profile">
+                        <Button variant="outline" size="sm" className="bg-transparent text-yellow-800 border-yellow-600 hover:bg-yellow-100">
+                            Lengkapi
+                        </Button>
+                    </Link>
+                </CardHeader>
+            </Card>
+        )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status Pendaftaran */}
