@@ -12,11 +12,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Trophy, BookOpen, Lightbulb } from "lucide-react"
+import { Trophy, BookOpen, Lightbulb, AlertTriangle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { FileUpload } from "@/components/ui/file-upload"
 import { showErrorToast, showSuccessToast, withRetry } from "@/lib/error-handler"
 import { ErrorBoundary } from "@/components/error-boundary"
+
+// ... (Interface Competition, Registration, TeamMember, CompetitionSubject tetap sama)
 
 interface Competition {
   id: string
@@ -70,24 +72,48 @@ export default function PendaftaranPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [teamSize, setTeamSize] = useState<number>(2)
   const [isLoading, setIsLoading] = useState(false)
+  const [isRegistrationClosed, setIsRegistrationClosed] = useState(false)
 
   const [ospSubjects, setOspSubjects] = useState<CompetitionSubject[]>([
-  { id: '1', name: 'Matematika', code: 'MAT', description: 'Olimpiade Matematika' },
-  { id: '2', name: 'Fisika', code: 'FIS', description: 'Olimpiade Fisika' },
-  { id: '3', name: 'Kimia', code: 'KIM', description: 'Olimpiade Kimia' },
-  { id: '4', name: 'Biologi', code: 'BIO', description: 'Olimpiade Biologi' },
-  { id: '5', name: 'Geografi', code: 'GEO', description: 'Olimpiade Geografi' },
-  { id: '6', name: 'Kebumian', code: 'BUM', description: 'Olimpiade Kebumian' }
+    { id: '1', name: 'Matematika', code: 'MAT', description: 'Olimpiade Matematika' },
+    { id: '2', name: 'Fisika', code: 'FIS', description: 'Olimpiade Fisika' },
+    { id: '3', name: 'Kimia', code: 'KIM', description: 'Olimpiade Kimia' },
+    { id: '4', name: 'Biologi', code: 'BIO', description: 'Olimpiade Biologi' },
+    { id: '5', name: 'Geografi', code: 'GEO', description: 'Olimpiade Geografi' },
+    { id: '6', name: 'Kebumian', code: 'BUM', description: 'Olimpiade Kebumian' }
   ])
   const [selectedSubject, setSelectedSubject] = useState<string>('')
   const [showSubjectModal, setShowSubjectModal] = useState(false)
   const [currentRegistration, setCurrentRegistration] = useState<Registration | null>(null)
 
+  // --- PERUBAHAN DI SINI ---
+  useEffect(() => {
+    // Tentukan tanggal dan waktu penutupan pendaftaran di sini
+    // Format: YYYY-MM-DDTHH:mm:ss
+    const REGISTRATION_DEADLINE = new Date('2025-08-30T23:59:59');
+
+    const checkRegistrationDeadline = () => {
+      const now = new Date();
+      if (now > REGISTRATION_DEADLINE) {
+        setIsRegistrationClosed(true);
+      } else {
+        setIsRegistrationClosed(false);
+      }
+    };
+
+    checkRegistrationDeadline();
+    // Set interval untuk memeriksa setiap menit, berguna jika pengguna membiarkan tab terbuka
+    const interval = setInterval(checkRegistrationDeadline, 60000); 
+
+    return () => clearInterval(interval);
+  }, []);
+  // --- AKHIR PERUBAHAN ---
+
   const copyTwibbonCaption = async () => {
-  const userName = userProfile?.full_name || '[Nama]'
-  const userInstitution = userProfile?.school_institution || '[Sekolah/Universitas]'
-  
-  const caption = `Halo, Olympiads!
+    const userName = userProfile?.full_name || '[Nama]'
+    const userInstitution = userProfile?.school_institution || '[Sekolah/Universitas]'
+    
+    const caption = `Halo, Olympiads!
 Perkenalkan, saya ${userName} dari ${userInstitution}.
 Bergabung dalam UI Science Olympiad 2025 bukan hanya soal kompetisi, tetapi juga wadah untuk mengasah kemampuan, menyalurkan ide, serta menunjukkan kepedulian terhadap isu lingkungan.
 
@@ -130,20 +156,20 @@ BEM FMIPA UI 2025
 Semarakkan Perjuangan Biru Hitam
 #MenyalakanSemarakKeilmuan`
 
-  try {
-    await navigator.clipboard.writeText(caption)
-    showSuccessToast("Caption berhasil disalin ke clipboard!")
-  } catch (error) {
-    // Fallback untuk browser yang tidak support clipboard API
-    const textArea = document.createElement('textarea')
-    textArea.value = caption
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
-    showSuccessToast("Caption berhasil disalin!")
+    try {
+      await navigator.clipboard.writeText(caption)
+      showSuccessToast("Caption berhasil disalin ke clipboard!")
+    } catch (error) {
+      // Fallback untuk browser yang tidak support clipboard API
+      const textArea = document.createElement('textarea')
+      textArea.value = caption
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      showSuccessToast("Caption berhasil disalin!")
+    }
   }
-}
 
   const [formData, setFormData] = useState({
     teamName: "",
@@ -552,6 +578,19 @@ const openSubjectSelection = (registration: Registration) => {
           </TabsList>
 
           <TabsContent value="competitions" className="space-y-6">
+            {isRegistrationClosed && (
+                <Card className="bg-yellow-50 border-yellow-200">
+                    <CardHeader className="flex flex-row items-center gap-4">
+                        <AlertTriangle className="h-6 w-6 text-yellow-600" />
+                        <div>
+                            <CardTitle className="text-yellow-900">Pendaftaran Ditutup</CardTitle>
+                            <CardDescription className="text-yellow-800">
+                                Mohon maaf, periode pendaftaran early bird untuk semua kompetisi telah berakhir.
+                            </CardDescription>
+                        </div>
+                    </CardHeader>
+                </Card>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCompetitions.map((competition) => {
                 const IconComponent = getCompetitionIcon(competition.code)
@@ -561,8 +600,7 @@ const openSubjectSelection = (registration: Registration) => {
                 registrations.some(
                   (reg) => reg.status === "pending" || reg.status === "approved"
                 )
-                  const disabled =
-                isRegistered || hasActiveRegistration
+                  const disabled = isRegistered || hasActiveRegistration || isRegistrationClosed;
 
                 return (
                   <Card key={competition.id} className="hover:shadow-lg transition-shadow">
@@ -577,7 +615,9 @@ const openSubjectSelection = (registration: Registration) => {
                             <CardDescription className="text-sm">{competition.target_level}</CardDescription>
                           </div>
                         </div>
-                        <Badge variant="default">Buka</Badge>
+                        <Badge variant={isRegistrationClosed ? "destructive" : "default"}>
+                            {isRegistrationClosed ? "Tutup" : "Buka"}
+                        </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -596,7 +636,9 @@ const openSubjectSelection = (registration: Registration) => {
                         disabled={disabled}
                         onClick={() => handleRegisterCompetition(competition)}
                       >
-                        {isRegistered
+                        {isRegistrationClosed 
+                            ? "Pendaftaran Ditutup" 
+                            : isRegistered
                           ? "Sudah Terdaftar"
                           : hasActiveRegistration
                           ? "Sudah Mendaftar Lomba Lain"

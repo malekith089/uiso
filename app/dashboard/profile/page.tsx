@@ -134,6 +134,17 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
+      <Card className="bg-blue-50 border-blue-200">
+    <CardHeader>
+        <CardTitle className="text-blue-800 text-lg">Informasi Penting</CardTitle>
+        <CardDescription className="text-blue-700">
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li>Bagi peserta <strong>EGK</strong>, harap isi data diri dengan data <strong>perwakilan tim</strong>.</li>
+                <li>Mohon untuk mengisi nomor HP dengan nomor <strong>WhatsApp yang aktif</strong> untuk kemudahan komunikasi.</li>
+            </ul>
+        </CardDescription>
+    </CardHeader>
+</Card>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Profil Akun Saya</h1>
