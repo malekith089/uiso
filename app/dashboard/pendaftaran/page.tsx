@@ -92,7 +92,7 @@ export default function PendaftaranPage() {
   useEffect(() => {
     // Tentukan tanggal dan waktu penutupan pendaftaran di sini
     // Format: YYYY-MM-DDTHH:mm:ss
-    const REGISTRATION_DEADLINE = new Date('2025-08-31T23:59:59');
+    const REGISTRATION_DEADLINE = new Date('2025-08-31T21:00:00');
 
     const checkRegistrationDeadline = () => {
       const now = new Date();
