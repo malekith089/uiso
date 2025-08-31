@@ -8,6 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Calendar, CheckCircle, Clock, AlertTriangle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { showErrorToast } from "@/lib/error-handler"
 
 // Perbarui interface ini
 interface Registration {
@@ -31,6 +33,7 @@ export default function DashboardPage() {
   const [isProfileComplete, setIsProfileComplete] = useState(true) // Default true
   const [needsOspSelection, setNeedsOspSelection] = useState(false) // <-- State baru
   const supabase = createClient()
+  const router = useRouter()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -97,6 +100,18 @@ export default function DashboardPage() {
         return <Badge variant="secondary">Menunggu</Badge>
     }
   }, [])
+
+    const handleDaftarClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        if (!isProfileComplete) {
+            e.preventDefault();
+            showErrorToast(
+                new Error("Profil Anda belum lengkap. Silakan lengkapi data diri Anda di halaman profil terlebih dahulu."),
+                "Profil Tidak Lengkap"
+            );
+        } else {
+            router.push('/dashboard/pendaftaran');
+        }
+    };
 
     if (loading) {
     return (
@@ -221,9 +236,7 @@ export default function DashboardPage() {
             {registrations.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500 mb-4">Anda belum mendaftar kompetisi apapun</p>
-                <Link href="/dashboard/pendaftaran">
-                  <Button>Daftar Kompetisi</Button>
-                </Link>
+                <Button onClick={handleDaftarClick}>Daftar Kompetisi</Button>
               </div>
             ) : (
               <div className="space-y-4">
