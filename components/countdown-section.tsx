@@ -21,7 +21,7 @@ function calculateTimeLeft(targetDate: number) {
 }
 
 export function CountdownSection() {
-  const targetDate = new Date("2025-08-30T23:59:00").getTime()
+  const targetDate = new Date("2025-09-01T14:00:00").getTime()
   
   // Inisialisasi dengan nilai yang sudah dihitung, bukan 0
   const [timeLeft, setTimeLeft] = useState(() => calculateTimeLeft(targetDate))
@@ -98,7 +98,7 @@ export function CountdownSection() {
           </span>
           <br />
           <span className="text-white [text-shadow:0_4px_8px_rgba(0,0,0,0.5)]">
-            Close Early Bird Registration!
+            H-1 Batch 1 Registration!
           </span>
         </h1>
 

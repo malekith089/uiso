@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Trophy, BookOpen, Lightbulb, AlertTriangle } from "lucide-react"
+import { Trophy, BookOpen, Lightbulb, AlertTriangle, Info } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { FileUpload } from "@/components/ui/file-upload"
 import { showErrorToast, showSuccessToast, withRetry } from "@/lib/error-handler"
@@ -90,7 +90,7 @@ export default function PendaftaranPage() {
   useEffect(() => {
     // Tentukan tanggal dan waktu penutupan pendaftaran di sini
     // Format: YYYY-MM-DDTHH:mm:ss
-    const REGISTRATION_DEADLINE = new Date('2025-08-30T23:59:59');
+    const REGISTRATION_DEADLINE = new Date('2025-08-31T23:59:59');
 
     const checkRegistrationDeadline = () => {
       const now = new Date();
@@ -578,7 +578,7 @@ const openSubjectSelection = (registration: Registration) => {
           </TabsList>
 
           <TabsContent value="competitions" className="space-y-6">
-            {isRegistrationClosed && (
+            {isRegistrationClosed ? (
                 <Card className="bg-yellow-50 border-yellow-200">
                     <CardHeader className="flex flex-row items-center gap-4">
                         <AlertTriangle className="h-6 w-6 text-yellow-600" />
@@ -590,6 +590,19 @@ const openSubjectSelection = (registration: Registration) => {
                         </div>
                     </CardHeader>
                 </Card>
+                  ) : (
+    // --- KODE TAMBAHAN DIMULAI DI SINI ---
+    <Card className="bg-blue-50 border-blue-200">
+      <CardHeader className="flex flex-row items-center gap-4">
+        <Info className="h-6 w-6 text-blue-600" />
+        <div>
+          <CardTitle className="text-blue-900">Pendaftaran Kuota Terbatas Dibuka!</CardTitle>
+          <CardDescription className="text-blue-800">
+            Pendaftaran hari ini dibuka dengan kuota terbatas. Segera daftar sebelum kuota terpenuhi!
+          </CardDescription>
+        </div>
+      </CardHeader>
+    </Card>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCompetitions.map((competition) => {
