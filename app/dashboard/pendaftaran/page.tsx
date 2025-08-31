@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import type React from "react";
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/client"
 import { FileUpload } from "@/components/ui/file-upload"
 import { showErrorToast, showSuccessToast, withRetry } from "@/lib/error-handler"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { useRouter } from 'next/navigation';
 
 // ... (Interface Competition, Registration, TeamMember, CompetitionSubject tetap sama)
 
@@ -85,6 +86,7 @@ export default function PendaftaranPage() {
   const [selectedSubject, setSelectedSubject] = useState<string>('')
   const [showSubjectModal, setShowSubjectModal] = useState(false)
   const [currentRegistration, setCurrentRegistration] = useState<Registration | null>(null)
+  const router = useRouter();
 
   // --- PERUBAHAN DI SINI ---
   useEffect(() => {
@@ -232,6 +234,21 @@ Semarakkan Perjuangan Biru Hitam
         const { data: profile, error } = await supabase.from("profiles").select("*").eq("id", user.id).single()
         if (error) throw error
         setUserProfile(profile)
+
+        if (profile) {
+            const requiredFields = [
+                "full_name", "school_institution", "identity_number", "phone",
+                "tempat_lahir", "tanggal_lahir", "jenis_kelamin", "alamat",
+            ];
+            const isComplete = requiredFields.every((field) => profile[field]);
+            if (!isComplete) {
+                showErrorToast(new Error("Harap lengkapi profil Anda terlebih dahulu untuk dapat mendaftar kompetisi."), "Profil Belum Lengkap");
+                router.push("/dashboard/profile");
+            }
+        } else {
+            showErrorToast(new Error("Profil tidak ditemukan. Silakan lengkapi profil Anda."), "Profil Tidak Ditemukan");
+            router.push("/dashboard/profile");
+        }
       }
     } catch (error) {
       showErrorToast(error, "fetchUserProfile")
