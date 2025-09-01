@@ -588,9 +588,9 @@ export default function UnifiedManagementClient({
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Manajemen Terpadu</h2>
+            <h2 className="text-3xl font-bold tracking-tight">Manajemen Pendaftaran</h2>
             <p className="text-muted-foreground">
-              Kelola akun peserta dan persetujuan pendaftaran dalam satu dashboard
+              Kelola persetujuan pendaftaran peserta
             </p>
           </div>
           <div className="flex gap-2">
