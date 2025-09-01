@@ -55,7 +55,7 @@ export function CountdownSection() {
             </span>
             <br />
             <span className="text-white">
-              Close Batch 1 Registration!
+              Close Batch 1 Registration
             </span>
           </h1>
           
