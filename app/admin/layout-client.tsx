@@ -26,20 +26,20 @@ const sidebarItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Manajemen Terpadu",
+    title: "Persetujuan Pendaftaran",
     href: "/admin/unified",
     icon: Settings,
   },
-  {
-    title: "Manajemen Akun",
-    href: "/admin/peserta",
-    icon: Users,
-  },
-  {
-    title: "Persetujuan Pendaftaran",
-    href: "/admin/persetujuan",
-    icon: FileCheck,
-  },
+  // {
+  //   title: "Manajemen Akun",
+  //   href: "/admin/peserta",
+  //   icon: Users,
+  // },
+  // {
+  //   title: "Persetujuan Pendaftaran",
+  //   href: "/admin/persetujuan",
+  //   icon: FileCheck,
+  // },
   {
     title: "Manajemen Kompetisi",
     href: "/admin/kompetisi",
