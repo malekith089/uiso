@@ -92,7 +92,7 @@ export default function PendaftaranPage() {
   useEffect(() => {
     // Tentukan tanggal dan waktu penutupan pendaftaran di sini
     // Format: YYYY-MM-DDTHH:mm:ss
-    const REGISTRATION_DEADLINE = new Date('2025-08-31T21:00:00');
+    const REGISTRATION_DEADLINE = new Date('2025-09-20T23:59:59');
 
     const checkRegistrationDeadline = () => {
       const now = new Date();
@@ -1105,12 +1105,12 @@ const openSubjectSelection = (registration: Registration) => {
                         <p className="text-sm text-blue-800">No. Rekening: 107659308786</p>
                         <p className="text-sm text-blue-800">Atas Nama: Gloria Nova Angelina Siahaan</p>
 
-                        <p className="text-sm text-blue-900 mt-3 font-semibold">Biaya Pendaftaran (Early Bird):</p>
+                        <p className="text-sm text-blue-900 mt-3 font-semibold">Biaya Pendaftaran (Batch 1):</p>
                         <p className="text-sm font-bold text-green-700">
-                          SMA: <span className="bg-green-100 px-2 py-0.5 rounded">Rp50.000,-</span>
+                          SMA: <span className="bg-green-100 px-2 py-0.5 rounded">Rp60.000,-</span>
                         </p>
                         <p className="text-sm font-bold text-green-700">
-                          Mahasiswa: <span className="bg-green-100 px-2 py-0.5 rounded">Rp60.000,-</span>
+                          Mahasiswa: <span className="bg-green-100 px-2 py-0.5 rounded">Rp75.000,-</span>
                         </p>
                       </div>
                       <FileUpload
