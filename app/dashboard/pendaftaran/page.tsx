@@ -190,7 +190,7 @@ Semarakkan Perjuangan Biru Hitam
         email: "",
         phone: "",
         schoolInstitution: "",
-        educationLevel: "Mahasiswa/i",
+        educationLevel: "Mahasiswa/i", // Tetap
         kelas: "",
         semester: "",
         tempatLahir: "",
@@ -205,7 +205,7 @@ Semarakkan Perjuangan Biru Hitam
         email: "",
         phone: "",
         schoolInstitution: "",
-        educationLevel: "",
+        educationLevel: "Mahasiswa/i", // <-- PERUBAHAN DI SINI
         kelas: "",
         semester: "",
         tempatLahir: "",
@@ -362,43 +362,66 @@ Semarakkan Perjuangan Biru Hitam
   e.preventDefault();
   if (!selectedCompetition || !userProfile) return;
 
-  // TAMBAHAN: Jalankan validasi
   const validationErrors = validateForm();
   if (validationErrors.length > 0) {
-    const errorMessage = validationErrors.join('\n');
-    showErrorToast(new Error(errorMessage), "validasi");
+    const errorMessage = validationErrors.join("\n");
+    showErrorToast(new Error(errorMessage), "Validasi Gagal");
     return;
   }
 
   setIsLoading(true);
+  let createdRegistrationId: string | null = null;
 
   try {
-    await withRetry(async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) throw new Error("User not authenticated")
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("User not authenticated");
 
-      const { data: registration, error: regError } = await supabase
-        .from("registrations")
-        .insert({
-          user_id: user.id,
-          competition_id: selectedCompetition.id,
-          team_name: selectedCompetition.participant_type === "Team" ? formData.teamName : null,
-          team_size: selectedCompetition.participant_type === "Team" ? teamSize : 1,
-          identity_card_url: formData.identityCardUrl,
-          engagement_proof_url: formData.engagementProofUrl,
-          payment_proof_url: formData.paymentProofUrl,
-          selected_subject_id: selectedCompetition.code === "OSP" ? formData.selectedOspSubject : null,
-          status: "pending",
-        })
-        .select()
-        .single()
+    // Langkah 1: Masukkan data registrasi
+    const { data: registration, error: regError } = await supabase
+      .from("registrations")
+      .insert({
+        user_id: user.id,
+        competition_id: selectedCompetition.id,
+        team_name:
+          selectedCompetition.participant_type === "Team"
+            ? formData.teamName
+            : null,
+        team_size:
+          selectedCompetition.participant_type === "Team" ? teamSize : 1,
+        identity_card_url: formData.identityCardUrl,
+        engagement_proof_url: formData.engagementProofUrl,
+        payment_proof_url: formData.paymentProofUrl,
+        selected_subject_id:
+          selectedCompetition.code === "OSP"
+            ? formData.selectedOspSubject
+            : null,
+        status: "pending",
+      })
+      .select()
+      .single();
 
-      if (regError) throw regError
+    if (regError) {
+      if (regError.code === "23505") {
+        throw new Error(
+          "Anda sudah terdaftar di kompetisi lain yang aktif."
+        );
+      }
+      throw regError;
+    }
 
-      if (selectedCompetition.participant_type === "Team" && registration) {
-        const teamMembersData = formData.teamMembers.slice(0, teamSize).map((member, index) => ({
+    if (!registration) {
+      throw new Error("Gagal membuat data registrasi.");
+    }
+    
+    createdRegistrationId = registration.id; // Simpan ID registrasi
+
+    // Langkah 2: Jika registrasi berhasil, masukkan data anggota tim
+    if (selectedCompetition.participant_type === "Team") {
+      const teamMembersData = formData.teamMembers
+        .slice(0, teamSize)
+        .map((member, index) => ({
           registration_id: registration.id,
           full_name: member.name,
           identity_number: member.identityNumber,
@@ -406,31 +429,40 @@ Semarakkan Perjuangan Biru Hitam
           email: member.email,
           phone: member.phone,
           school_institution: member.schoolInstitution,
-          education_level: member.educationLevel,
+          education_level: "Mahasiswa/i", // Pastikan nilai ini valid
           kelas: member.kelas,
-          semester: member.semester ? Number.parseInt(member.semester) : null,
+          semester: member.semester ? parseInt(member.semester, 10) : null,
           tempat_lahir: member.tempatLahir,
-          tanggal_lahir: member.tanggalLahir,
+          tanggal_lahir: member.tanggalLahir || null,
           jenis_kelamin: member.jenisKelamin,
           alamat: member.alamat,
           member_order: index + 1,
-        }))
+        }));
 
-        const { error: membersError } = await supabase.from("team_members").insert(teamMembersData)
+      const { error: membersError } = await supabase
+        .from("team_members")
+        .insert(teamMembersData);
 
-        if (membersError) throw membersError
+      if (membersError) {
+        // Beri pesan error spesifik untuk anggota tim
+        throw new Error(`Gagal menyimpan data anggota tim: ${membersError.message}`);
       }
-    })
+    }
 
-    showSuccessToast("Pendaftaran berhasil! Menunggu persetujuan admin.")
-    setShowForm(false)
-    setSelectedCompetition(null)
-    resetForm()
-    fetchRegistrations()
+    showSuccessToast("Pendaftaran berhasil! Menunggu persetujuan admin.");
+    setShowForm(false);
+    setSelectedCompetition(null);
+    resetForm();
+    fetchRegistrations();
   } catch (error) {
-    showErrorToast(error, "handleSubmit")
+     // Jika terjadi error SETELAH registrasi dibuat, hapus registrasi tersebut
+    if (createdRegistrationId) {
+      console.log(`Mencoba menghapus registrasi gagal dengan ID: ${createdRegistrationId}`);
+      await supabase.from("registrations").delete().eq("id", createdRegistrationId);
+    }
+    showErrorToast(error, "handleSubmit");
   } finally {
-    setIsLoading(false)
+    setIsLoading(false);
   }
 };
 
