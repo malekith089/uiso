@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "created_at"
     const sortOrder = searchParams.get("sortOrder") || "desc"
 
-    console.log("[v0] API received params:", { page, sortBy, sortOrder, search })
-
+    // STRATEGY: Fetch ALL filtered data first, sort in-memory, then paginate
+    // This ensures sorting works correctly across the entire dataset
     let query = supabase.from("registrations").select(
       `
         id,
@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
         engagement_proof_url,
         payment_proof_url,
         created_at,
+        updated_at,
         selected_subject_id,
         identity_card_verified,
         engagement_proof_verified,
@@ -52,14 +53,7 @@ export async function GET(request: NextRequest) {
       { count: "exact" },
     )
 
-    if (search) {
-      query = query.or(`
-        profiles!registrations_user_id_fkey.full_name.ilike.%${search}%,
-        profiles!registrations_user_id_fkey.email.ilike.%${search}%,
-        profiles!registrations_user_id_fkey.school_institution.ilike.%${search}%
-      `)
-    }
-
+    // Apply all filters except pagination
     if (status !== "all") {
       query = query.eq("status", status)
     }
@@ -80,56 +74,92 @@ export async function GET(request: NextRequest) {
       query = query.lte("created_at", dateTo + "T23:59:59.999Z")
     }
 
-    if (sortBy === "profiles.full_name") {
-      console.log("[v0] Applying profiles.full_name sort:", { sortOrder })
-      query = query.order("full_name", {
-        ascending: sortOrder === "asc",
-        foreignTable: "profiles!registrations_user_id_fkey",
-      })
-    } else if (sortBy === "competitions.name") {
-      query = query.order("name", {
-        ascending: sortOrder === "asc",
-        foreignTable: "competitions",
-      })
-    } else if (sortBy === "profiles.education_level") {
-      query = query.order("education_level", {
-        ascending: sortOrder === "asc",
-        foreignTable: "profiles!registrations_user_id_fkey",
-      })
-    } else {
-      // For registrations table fields
-      query = query.order(sortBy, { ascending: sortOrder === "asc" })
+    if (search) {
+      query = query.or(
+        `profiles!registrations_user_id_fkey.full_name.ilike.%${search}%,profiles!registrations_user_id_fkey.email.ilike.%${search}%,profiles!registrations_user_id_fkey.school_institution.ilike.%${search}%,profiles!registrations_user_id_fkey.identity_number.ilike.%${search}%`
+      )
     }
 
-    const from = (page - 1) * limit
-    const to = from + limit - 1
-    query = query.range(from, to)
-
-    const { data: registrations, error, count } = await query
+    // Fetch all filtered data (without pagination for sorting)
+    const { data: allRegistrations, error, count } = await query
 
     if (error) {
       console.error("Error fetching registrations:", error)
       return NextResponse.json({ error: "Failed to fetch registrations" }, { status: 500 })
     }
 
-    console.log("[v0] Query executed successfully:", {
-      resultCount: registrations?.length,
-      firstItemName: registrations?.[0]?.profiles?.full_name,
-      sortBy,
-      sortOrder,
-    })
+    // FIXED: Apply sorting in-memory with proper data structure handling
+    let sortedRegistrations = allRegistrations || []
+    
+    if (sortedRegistrations.length > 1) {
+      sortedRegistrations = sortedRegistrations.sort((a, b) => {
+        let valueA: string | number = ""
+        let valueB: string | number = ""
+        
+        // Helper function to safely get first item from array or return object
+        const getProfile = (item: any) => Array.isArray(item.profiles) ? item.profiles[0] : item.profiles
+        const getCompetition = (item: any) => Array.isArray(item.competitions) ? item.competitions[0] : item.competitions
+        
+        switch (sortBy) {
+          case "profiles.full_name":
+            valueA = getProfile(a)?.full_name?.toLowerCase() || ""
+            valueB = getProfile(b)?.full_name?.toLowerCase() || ""
+            break
+          case "profiles.education_level":
+            valueA = getProfile(a)?.education_level || ""
+            valueB = getProfile(b)?.education_level || ""
+            break
+          case "competitions.name":
+            valueA = getCompetition(a)?.name || ""
+            valueB = getCompetition(b)?.name || ""
+            break
+          case "competitions.code":
+            valueA = getCompetition(a)?.code || ""
+            valueB = getCompetition(b)?.code || ""
+            break
+          case "status":
+            valueA = a.status || ""
+            valueB = b.status || ""
+            break
+          case "created_at":
+          default:
+            valueA = new Date(a.created_at || 0).getTime()
+            valueB = new Date(b.created_at || 0).getTime()
+            break
+        }
+        
+        let comparison = 0
+        if (typeof valueA === "string" && typeof valueB === "string") {
+          comparison = valueA.localeCompare(valueB, 'id', { 
+            numeric: true,
+            caseFirst: 'lower' 
+          })
+        } else {
+          comparison = valueA < valueB ? -1 : valueA > valueB ? 1 : 0
+        }
+        
+        return sortOrder === "asc" ? comparison : -comparison
+      })
+    }
 
-    const totalPages = Math.ceil((count || 0) / limit)
+    // FIXED: Apply pagination AFTER sorting
+    const totalItems = sortedRegistrations.length
+    const from = (page - 1) * limit
+    const to = from + limit
+    const paginatedRegistrations = sortedRegistrations.slice(from, to)
+
+    const totalPages = Math.ceil(totalItems / limit)
     const hasNextPage = page < totalPages
     const hasPrevPage = page > 1
 
+
     const response = NextResponse.json({
-      data: registrations || [],
+      data: paginatedRegistrations,
       pagination: {
         page,
         limit,
-        total: count || 0,
-        totalPages,
+        total: count || 0, // Use original count for total records
+        totalPages: Math.ceil((count || 0) / limit), // Calculate pages based on total DB records
         hasNextPage,
         hasPrevPage,
       },
