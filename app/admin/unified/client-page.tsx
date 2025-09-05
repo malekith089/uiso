@@ -169,6 +169,11 @@ export default function UnifiedManagementClient({
       identity_card: boolean
       engagement_proof: boolean
       payment_proof: boolean
+      team_members: {
+        [memberId: string]: {
+          identity_card_verified: boolean
+        }
+      }
     }
   }>({})
 
@@ -274,14 +279,25 @@ export default function UnifiedManagementClient({
           identity_card: boolean
           engagement_proof: boolean
           payment_proof: boolean
+          team_members: { [memberId: string]: { identity_card_verified: boolean } }
         }
       } = {}
 
       registrations.forEach((registration) => {
+        const teamMemberChecks: { [memberId: string]: { identity_card_verified: boolean } } = {}
+        if (registration.team_members) {
+          registration.team_members.forEach((member: any) => {
+            teamMemberChecks[member.id] = {
+              identity_card_verified: member.identity_card_verified || false,
+            }
+          })
+        }
+
         initialVerificationState[registration.id] = {
           identity_card: registration.identity_card_verified || false,
           engagement_proof: registration.engagement_proof_verified || false,
           payment_proof: registration.payment_proof_verified || false,
+          team_members: teamMemberChecks,
         }
       })
 
@@ -475,9 +491,25 @@ export default function UnifiedManagementClient({
     }
   }
 
-  const isAllVerified = (registrationId: string) => {
-    const checks = verificationChecks[registrationId]
-    return checks && checks.identity_card && checks.engagement_proof && checks.payment_proof
+  const isAllVerified = (registration: UnifiedRegistration) => {
+    if (!registration) return false
+    const checks = verificationChecks[registration.id]
+    if (!checks) return false
+
+    // Logika untuk SCC
+    if (registration.competitions.code === "SCC") {
+      const allMembersVerified =
+        registration.team_members && registration.team_members.length > 0
+          ? registration.team_members.every(
+              (member: any) => checks.team_members[member.id]?.identity_card_verified,
+            )
+          : true // Anggap true jika tidak ada anggota tim (kasus aneh)
+
+      return checks.engagement_proof && checks.payment_proof && allMembersVerified
+    }
+
+    // Logika untuk kompetisi lain
+    return checks.identity_card && checks.engagement_proof && checks.payment_proof
   }
 
   const handleStatusChange = async (id: string, newStatus: string) => {
@@ -607,6 +639,50 @@ export default function UnifiedManagementClient({
       })
       .catch((error) => showErrorToast(error, "downloadFile"))
   }
+
+  const handleTeamMemberVerificationCheck = async (memberId: string, registrationId: string, checked: boolean) => {
+  try {
+    // Update state lokal
+    setVerificationChecks((prev) => ({
+      ...prev,
+      [registrationId]: {
+        ...prev[registrationId],
+        team_members: {
+          ...prev[registrationId].team_members,
+          [memberId]: { identity_card_verified: checked },
+        },
+      },
+    }))
+
+    // Panggil API untuk menyimpan ke database
+    const response = await fetch("/api/admin/registrations/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        teamMemberId: memberId, // Kirim ID anggota tim
+        verificationType: "identity_card_verified",
+        isVerified: checked,
+      }),
+    })
+
+    if (!response.ok) throw new Error("Gagal memperbarui status verifikasi anggota")
+
+    showSuccessToast("Status verifikasi anggota tim diperbarui")
+  } catch (error) {
+    // Rollback state jika gagal
+    setVerificationChecks((prev) => ({
+      ...prev,
+      [registrationId]: {
+        ...prev[registrationId],
+        team_members: {
+          ...prev[registrationId].team_members,
+          [memberId]: { identity_card_verified: !checked },
+        },
+      },
+    }))
+    showErrorToast(error, "handleTeamMemberVerificationCheck")
+  }
+}
 
   return (
     <ErrorBoundary>
@@ -1225,48 +1301,50 @@ export default function UnifiedManagementClient({
                         <FileText className="w-5 h-5" />
                         Berkas Pendaftaran
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-sm font-medium">Kartu Identitas</Label>
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                id={`verify-identity-${selectedRegistration.id}`}
-                                checked={verificationChecks[selectedRegistration.id]?.identity_card || false}
-                                onCheckedChange={(checked) =>
-                                  handleVerificationCheck(selectedRegistration.id, "identity_card", checked as boolean)
-                                }
-                              />
-                              <Label
-                                htmlFor={`verify-identity-${selectedRegistration.id}`}
-                                className="text-xs text-green-600"
-                              >
-                                Terverifikasi
-                              </Label>
+                      <div className={`grid grid-cols-1 ${selectedRegistration.competitions.code === "SCC" ? "md:grid-cols-2" : "md:grid-cols-3"} gap-4`}>
+                        {selectedRegistration.competitions.code !== "SCC" && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-sm font-medium">Kartu Identitas</Label>
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`verify-identity-${selectedRegistration.id}`}
+                                  checked={verificationChecks[selectedRegistration.id]?.identity_card || false}
+                                  onCheckedChange={(checked) =>
+                                    handleVerificationCheck(selectedRegistration.id, "identity_card", checked as boolean)
+                                  }
+                                />
+                                <Label
+                                  htmlFor={`verify-identity-${selectedRegistration.id}`}
+                                  className="text-xs text-green-600"
+                                >
+                                  Terverifikasi
+                                </Label>
+                              </div>
                             </div>
+                            {selectedRegistration.identity_card_url ? (
+                              <div className="relative">
+                                <img
+                                  src={selectedRegistration.identity_card_url || "/placeholder.svg"}
+                                  alt="Kartu Identitas"
+                                  className="w-full h-32 object-cover rounded border"
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className="absolute top-2 right-2"
+                                  onClick={() => window.open(selectedRegistration.identity_card_url, "_blank")}
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="w-full h-32 bg-gray-100 rounded border flex items-center justify-center">
+                                <p className="text-sm text-gray-500">Belum diunggah</p>
+                              </div>
+                            )}
                           </div>
-                          {selectedRegistration.identity_card_url ? (
-                            <div className="relative">
-                              <img
-                                src={selectedRegistration.identity_card_url || "/placeholder.svg"}
-                                alt="Kartu Identitas"
-                                className="w-full h-32 object-cover rounded border"
-                              />
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                className="absolute top-2 right-2"
-                                onClick={() => window.open(selectedRegistration.identity_card_url, "_blank")}
-                              >
-                                <ExternalLink className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="w-full h-32 bg-gray-100 rounded border flex items-center justify-center">
-                              <p className="text-sm text-gray-500">Belum diunggah</p>
-                            </div>
-                          )}
-                        </div>
+                        )}
 
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
@@ -1359,7 +1437,7 @@ export default function UnifiedManagementClient({
 
                       <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                         <div className="flex items-center gap-2">
-                          {isAllVerified(selectedRegistration.id) ? (
+                          {isAllVerified(selectedRegistration) ? (
                             <>
                               <CheckCircle className="w-5 h-5 text-green-600" />
                               <span className="text-sm font-medium text-green-600">
@@ -1499,41 +1577,61 @@ export default function UnifiedManagementClient({
                     </div>
                 </div>
 
-                <div>
-                    <Label className="text-sm font-medium">Kartu Identitas</Label>
-                    <div className="mt-2 flex items-center gap-2">
-                    <div className="w-20 h-12">
-                        <FileViewer 
-                        url={member.identity_card_url}
-                        alt="Kartu Identitas"
-                        className="w-full h-full"
-                        />
-                    </div>
-                    <div className="flex gap-1">
-                        <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => member.identity_card_url && downloadFile(
-                            member.identity_card_url, 
-                            `KTP_${member.full_name}.${member.identity_card_url.split('.').pop()}`
-                        )}
-                        disabled={!member.identity_card_url}
-                        >
-                        <Download className="w-4 h-4 mr-2" />
-                        Unduh
-                        </Button>
-                        {member.identity_card_url && getFileType(member.identity_card_url) === 'pdf' && (
-                        <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => window.open(member.identity_card_url, '_blank')}
-                        >
-                            <Eye className="w-4 h-4" />
-                        </Button>
-                        )}
-                    </div>
-                    </div>
-                </div>
+<div className="flex flex-col gap-2">
+  <div className="flex items-center justify-between">
+    <Label className="text-sm font-medium">Kartu Identitas</Label>
+    <div className="flex items-center gap-2">
+      <Checkbox
+        id={`verify-member-identity-${member.id}`}
+        checked={
+          verificationChecks[selectedRegistration.id]?.team_members[member.id]
+            ?.identity_card_verified || false
+        }
+        onCheckedChange={(checked) =>
+          handleTeamMemberVerificationCheck(member.id, selectedRegistration.id, checked as boolean)
+        }
+      />
+      <Label htmlFor={`verify-member-identity-${member.id}`} className="text-xs text-green-600">
+        Terverifikasi
+      </Label>
+    </div>
+  </div>
+  <div className="flex items-center gap-2">
+    <div className="w-20 h-12">
+      <FileViewer
+        url={member.identity_card_url}
+        alt="Kartu Identitas Anggota"
+        className="w-full h-full"
+      />
+    </div>
+    <div className="flex gap-1">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() =>
+          member.identity_card_url &&
+          downloadFile(
+            member.identity_card_url,
+            `KTP_${member.full_name}.${member.identity_card_url.split(".").pop()}`,
+          )
+        }
+        disabled={!member.identity_card_url}
+      >
+        <Download className="w-4 h-4 mr-2" />
+        Unduh
+      </Button>
+      {member.identity_card_url && getFileType(member.identity_card_url) === "pdf" && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => window.open(member.identity_card_url, "_blank")}
+        >
+          <Eye className="w-4 h-4" />
+        </Button>
+      )}
+    </div>
+  </div>
+</div>
                 </div>
             </CardContent>
             </Card>
