@@ -61,12 +61,12 @@ export default async function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Peserta</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Akun</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalParticipants || 0}</div>
-            <p className="text-xs text-muted-foreground">Terdaftar di sistem</p>
+            <p className="text-xs text-muted-foreground">Terdaftar di web</p>
           </CardContent>
         </Card>
 
@@ -89,87 +89,6 @@ export default async function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{pendingRegistrations || 0}</div>
             <p className="text-xs text-muted-foreground">Perlu ditinjau segera</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Kompetisi Aktif</CardTitle>
-            <Trophy className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{competitions?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {competitions?.map((c) => c.code).join(", ") || "Tidak ada"}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions & Recent Activity */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Aksi Cepat</CardTitle>
-            <CardDescription>Akses fitur admin yang sering digunakan</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button className="w-full justify-start bg-transparent" variant="outline" asChild>
-              <a href="/admin/persetujuan">
-                <UserCheck className="mr-2 h-4 w-4" />
-                Tinjau Pendaftaran Baru
-              </a>
-            </Button>
-            <Button className="w-full justify-start bg-transparent" variant="outline" asChild>
-              <a href="/admin/peserta">
-                <FileText className="mr-2 h-4 w-4" />
-                Export Data Peserta
-              </a>
-            </Button>
-            <Button className="w-full justify-start bg-transparent" variant="outline" asChild>
-              <a href="/admin/kompetisi">
-                <Trophy className="mr-2 h-4 w-4" />
-                Kelola Kompetisi
-              </a>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Aktivitas Terbaru</CardTitle>
-            <CardDescription>Pendaftaran terbaru dalam sistem</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {recentRegistrations && recentRegistrations.length > 0 ? (
-              recentRegistrations.map((registration: any, index: number) => (
-                <div key={registration.id} className="flex items-center space-x-4">
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      registration.status === "approved"
-                        ? "bg-green-500"
-                        : registration.status === "pending"
-                          ? "bg-yellow-500"
-                          : "bg-red-500"
-                    }`}
-                  ></div>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium">
-                      {registration.profiles.full_name} mendaftar {registration.competitions.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(registration.created_at).toLocaleDateString("id-ID")} - Status: {registration.status}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center text-muted-foreground">
-                <p className="text-sm">Belum ada aktivitas terbaru</p>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
