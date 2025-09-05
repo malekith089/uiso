@@ -147,6 +147,8 @@ export default function UnifiedManagementClient({
   const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "created_at")
   const [sortOrder, setSortOrder] = useState(searchParams.get("sortOrder") || "desc")
   const [loading, setLoading] = useState(true)
+  const [isProcessingStatus, setIsProcessingStatus] = useState(false)
+  const [processingAction, setProcessingAction] = useState<'approved' | 'rejected' | null>(null)
   const [showDetailDialog, setShowDetailDialog] = useState(false)
   const [statusChangeReason, setStatusChangeReason] = useState("")
   const [showEditProfileDialog, setShowEditProfileDialog] = useState(false)
@@ -548,7 +550,7 @@ export default function UnifiedManagementClient({
 
 const [loadingRows, setLoadingRows] = useState<Set<string>>(new Set())
 
-const handleStatusChange = async (id: string, newStatus: string) => {
+const handleStatusChange = async (id: string, newStatus: string): Promise<void> => {
   // Temukan registration berdasarkan ID
   const registration = registrations.find(reg => reg.id === id)
   
@@ -611,15 +613,39 @@ const handleStatusChange = async (id: string, newStatus: string) => {
     ))
 
     showSuccessToast(`Status berhasil diubah menjadi ${newStatus}`)
-  } catch (error) {
-    showErrorToast(error, "handleStatusChange")
-  } finally {
+    } catch (error) {
+      showErrorToast(error, "handleStatusChange")
+      throw error // Re-throw error agar bisa di-catch di handleDialogStatusChange
+    } finally {
     // Remove loading untuk row ini
     setLoadingRows(prev => {
       const newSet = new Set(prev)
       newSet.delete(id)
       return newSet
     })
+  }
+}
+
+const handleDialogStatusChange = async (registrationId: string, newStatus: 'approved' | 'rejected') => {
+  if (!selectedRegistration) return
+  
+  setIsProcessingStatus(true)
+  setProcessingAction(newStatus)
+  
+  try {
+    // Panggil function handleStatusChange yang sudah ada
+    await handleStatusChange(registrationId, newStatus)
+    
+    // Jika berhasil, tutup dialog
+    setSelectedRegistration(null)
+    setShowDetailDialog(false)
+    
+  } catch (error) {
+    // Error handling sudah ada di handleStatusChange
+    console.error("Error in dialog status change:", error)
+  } finally {
+    setIsProcessingStatus(false)
+    setProcessingAction(null)
   }
 }
 
@@ -831,6 +857,11 @@ const handleSaveProfile = async () => {
           ? { ...reg, profiles: editingProfile }
           : reg
       )
+    )
+
+    // 🔥 TAMBAHKAN: Update selectedRegistration juga
+    setSelectedRegistration(prev => 
+      prev ? { ...prev, profiles: editingProfile } : null
     )
 
     showSuccessToast("Profil peserta berhasil diperbarui")
@@ -1882,11 +1913,54 @@ const handleProfileInputChange = (field: string, value: any) => {
     </TabsContent>
     )}
               </Tabs>
-
               <DialogFooter>
-                <Button variant="outline" onClick={() => setSelectedRegistration(null)}>
-                  Tutup
-                </Button>
+                <div className="flex justify-between w-full">
+                  {/* Action buttons - hanya tampil jika status pending */}
+                  {selectedRegistration?.status === "pending" && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleDialogStatusChange(selectedRegistration.id, 'rejected')}
+                        disabled={isProcessingStatus}
+                      >
+                        {isProcessingStatus && processingAction === 'rejected' ? (
+                          <>
+                            <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                            Menolak...
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-4 h-4 mr-2" />
+                            Tolak
+                          </>
+                        )}
+                      </Button>
+                      
+                      <Button
+                        onClick={() => handleDialogStatusChange(selectedRegistration.id, 'approved')}
+                        disabled={isProcessingStatus || !isAllVerified(selectedRegistration)}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {isProcessingStatus && processingAction === 'approved' ? (
+                          <>
+                            <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                            Menyetujui...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Setujui
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Close button */}
+                  <Button variant="outline" onClick={() => setSelectedRegistration(null)}>
+                    Tutup
+                  </Button>
+                </div>
               </DialogFooter>
             </DialogContent>
           </Dialog>
