@@ -26,7 +26,7 @@ const sidebarItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Persetujuan Pendaftaran",
+    title: "Manajemen Pendaftaran",
     href: "/admin/unified",
     icon: Settings,
   },
@@ -40,11 +40,11 @@ const sidebarItems = [
   //   href: "/admin/persetujuan",
   //   icon: FileCheck,
   // },
-  {
-    title: "Manajemen Kompetisi",
-    href: "/admin/kompetisi",
-    icon: Trophy,
-  },
+  // {
+  //   title: "Manajemen Kompetisi",
+  //   href: "/admin/kompetisi",
+  //   icon: Trophy,
+  // },
 ]
 
 interface AdminLayoutClientProps {
