@@ -48,12 +48,23 @@ import {
   CheckSquare,
   ExternalLink,
   AlertCircle,
+  Download,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { showErrorToast, showSuccessToast, withRetry } from "@/lib/error-handler"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { useToast } from "@/hooks/use-toast"
 import type { UnifiedRegistration } from "./page"
+
+const getFileType = (url: string): "image" | "pdf" | "unknown" => {
+  const extension = url.split(".").pop()?.toLowerCase()
+  if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension || "")) {
+    return "image"
+  } else if (extension === "pdf") {
+    return "pdf"
+  }
+  return "unknown"
+}
 
 const FileViewer = ({ url, alt, className }: { url: string | null; alt: string; className?: string }) => {
   if (!url) {
@@ -581,6 +592,21 @@ export default function UnifiedManagementClient({
     setSelectedRegistration(registration)
     setShowDetailDialog(true)
   }
+  
+  const downloadFile = (url: string, filename: string) => {
+    fetch(url)
+      .then((response) => response.blob())
+      .then((blob) => {
+        const link = document.createElement("a")
+        link.href = URL.createObjectURL(blob)
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(link.href)
+      })
+      .catch((error) => showErrorToast(error, "downloadFile"))
+  }
 
   return (
     <ErrorBoundary>
@@ -1085,12 +1111,22 @@ export default function UnifiedManagementClient({
               </DialogHeader>
 
               <Tabs defaultValue="info" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="info">Informasi Peserta</TabsTrigger>
-                  <TabsTrigger value="files">Berkas</TabsTrigger>
-                  {selectedRegistration.team_members && selectedRegistration.team_members.length > 0 && (
-                    <TabsTrigger value="team">Anggota Tim</TabsTrigger>
-                  )}
+                <TabsList
+                    className={`grid w-full ${
+                    selectedRegistration.competitions.participant_type === "Team" &&
+                    selectedRegistration.team_members &&
+                    selectedRegistration.team_members.length > 0
+                        ? "grid-cols-3"
+                        : "grid-cols-2"
+                    }`}
+                >
+                    <TabsTrigger value="info">Informasi Peserta</TabsTrigger>
+                    <TabsTrigger value="files">Berkas</TabsTrigger>
+                    {selectedRegistration.competitions.participant_type === "Team" &&
+                    selectedRegistration.team_members &&
+                    selectedRegistration.team_members.length > 0 && (
+                        <TabsTrigger value="team">Anggota Tim</TabsTrigger>
+                    )}
                 </TabsList>
 
                 <TabsContent value="info" className="space-y-6">
@@ -1344,41 +1380,167 @@ export default function UnifiedManagementClient({
                   </div>
                 </TabsContent>
 
-                {selectedRegistration.team_members && selectedRegistration.team_members.length > 0 && (
-                  <TabsContent value="team" className="space-y-4">
-                    <div className="space-y-4">
-                      {selectedRegistration.team_members.map((member, index) => (
-                        <Card key={member.id}>
-                          <CardHeader>
-                            <CardTitle className="text-base">Anggota {index + 1}</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="grid gap-4 md:grid-cols-2">
-                              <div>
-                                <Label className="text-sm font-medium">Nama</Label>
-                                <p className="text-sm bg-gray-50 p-2 rounded mt-1">{member.full_name}</p>
-                              </div>
-                              <div>
-                                <Label className="text-sm font-medium">Email</Label>
-                                <p className="text-sm bg-gray-50 p-2 rounded mt-1">{member.email || "Belum diisi"}</p>
-                              </div>
-                              <div>
-                                <Label className="text-sm font-medium">No. HP</Label>
-                                <p className="text-sm bg-gray-50 p-2 rounded mt-1">{member.phone || "Belum diisi"}</p>
-                              </div>
-                              <div>
-                                <Label className="text-sm font-medium">Sekolah/Institusi</Label>
-                                <p className="text-sm bg-gray-50 p-2 rounded mt-1">
-                                  {member.school_institution || "Belum diisi"}
-                                </p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+               {selectedRegistration.competitions.participant_type === "Team" &&
+    selectedRegistration.team_members &&
+    selectedRegistration.team_members.length > 0 && (
+    <TabsContent value="team" className="space-y-4">
+        <div className="space-y-4">
+        {selectedRegistration.team_members.map((member: any, index: number) => (
+            <Card key={index}>
+            <CardHeader>
+                <CardTitle className="text-base">Anggota {index + 1}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-6">
+                {/* Basic Information */}
+                <div>
+                    <h5 className="font-medium text-sm text-gray-700 mb-3">
+                    Informasi Dasar
+                    </h5>
+                    <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <Label className="text-sm font-medium">Nama</Label>
+                        <p className="text-sm bg-gray-50 p-2 rounded mt-1">
+                        {member.full_name}
+                        </p>
                     </div>
-                  </TabsContent>
-                )}
+                    <div>
+                        <Label className="text-sm font-medium">Email</Label>
+                        <p className="text-sm bg-gray-50 p-2 rounded mt-1">
+                        {member.email || "Belum diisi"}
+                        </p>
+                    </div>
+                    <div>
+                        <Label className="text-sm font-medium">Nomor Identitas</Label>
+                        <p className="text-sm bg-gray-50 p-2 rounded mt-1">
+                        {member.identity_number}
+                        </p>
+                    </div>
+                    <div>
+                        <Label className="text-sm font-medium">No. HP</Label>
+                        <p className="text-sm bg-gray-50 p-2 rounded mt-1">
+                        {member.phone || "Belum diisi"}
+                        </p>
+                    </div>
+                    </div>
+                </div>
+
+                {/* Academic Information */}
+                <div>
+                    <h5 className="font-medium text-sm text-gray-700 mb-3">
+                    Informasi Akademik
+                    </h5>
+                    <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <Label className="text-sm font-medium">Sekolah/Institusi</Label>
+                        <p className="text-sm bg-gray-50 p-2 rounded mt-1">
+                        {member.school_institution || "Belum diisi"}
+                        </p>
+                    </div>
+                    <div>
+                        <Label className="text-sm font-medium">Jenjang Pendidikan</Label>
+                        <p className="text-sm bg-gray-50 p-2 rounded mt-1">
+                        {member.education_level || "Belum diisi"}
+                        </p>
+                    </div>
+                    {member.education_level === "SMA/Sederajat" && (
+                        <div>
+                        <Label className="text-sm font-medium">Kelas</Label>
+                        <p className="text-sm bg-gray-50 p-2 rounded mt-1">
+                            {member.kelas || "Belum diisi"}
+                        </p>
+                        </div>
+                    )}
+                    {member.education_level === "Mahasiswa/i" && (
+                        <div>
+                        <Label className="text-sm font-medium">Semester</Label>
+                        <p className="text-sm bg-gray-50 p-2 rounded mt-1">
+                            {member.semester
+                            ? `Semester ${member.semester}`
+                            : "Belum diisi"}
+                        </p>
+                        </div>
+                    )}
+                    </div>
+                </div>
+
+                {/* Personal Information */}
+                <div>
+                    <h5 className="font-medium text-sm text-gray-700 mb-3">
+                    Informasi Pribadi
+                    </h5>
+                    <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <Label className="text-sm font-medium">Tempat Lahir</Label>
+                        <p className="text-sm bg-gray-50 p-2 rounded mt-1">
+                        {member.tempat_lahir || "Belum diisi"}
+                        </p>
+                    </div>
+                    <div>
+                        <Label className="text-sm font-medium">Tanggal Lahir</Label>
+                        <p className="text-sm bg-gray-50 p-2 rounded mt-1">
+                        {member.tanggal_lahir
+                            ? new Date(member.tanggal_lahir).toLocaleDateString("id-ID")
+                            : "Belum diisi"}
+                        </p>
+                    </div>
+                    <div>
+                        <Label className="text-sm font-medium">Jenis Kelamin</Label>
+                        <p className="text-sm bg-gray-50 p-2 rounded mt-1">
+                        {member.jenis_kelamin || "Belum diisi"}
+                        </p>
+                    </div>
+                    <div className="md:col-span-2">
+                        <Label className="text-sm font-medium">Alamat Domisili</Label>
+                        <p className="text-sm bg-gray-50 p-2 rounded mt-1 min-h-[60px]">
+                        {member.alamat || "Belum diisi"}
+                        </p>
+                    </div>
+                    </div>
+                </div>
+
+                <div>
+                    <Label className="text-sm font-medium">Kartu Identitas</Label>
+                    <div className="mt-2 flex items-center gap-2">
+                    <div className="w-20 h-12">
+                        <FileViewer 
+                        url={member.identity_card_url}
+                        alt="Kartu Identitas"
+                        className="w-full h-full"
+                        />
+                    </div>
+                    <div className="flex gap-1">
+                        <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => member.identity_card_url && downloadFile(
+                            member.identity_card_url, 
+                            `KTP_${member.full_name}.${member.identity_card_url.split('.').pop()}`
+                        )}
+                        disabled={!member.identity_card_url}
+                        >
+                        <Download className="w-4 h-4 mr-2" />
+                        Unduh
+                        </Button>
+                        {member.identity_card_url && getFileType(member.identity_card_url) === 'pdf' && (
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.open(member.identity_card_url, '_blank')}
+                        >
+                            <Eye className="w-4 h-4" />
+                        </Button>
+                        )}
+                    </div>
+                    </div>
+                </div>
+                </div>
+            </CardContent>
+            </Card>
+        ))}
+        </div>
+    </TabsContent>
+    )}
               </Tabs>
 
               <DialogFooter>

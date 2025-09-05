@@ -17,8 +17,6 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "created_at"
     const sortOrder = searchParams.get("sortOrder") || "desc"
 
-    // STRATEGY: Fetch ALL filtered data first, sort in-memory, then paginate
-    // This ensures sorting works correctly across the entire dataset
     let query = supabase.from("registrations").select(
       `
         id,
@@ -48,39 +46,48 @@ export async function GET(request: NextRequest) {
           name,
           code,
           participant_type
+        ),
+        team_members (
+          id,
+          full_name,
+          email,
+          phone,
+          school_institution,
+          education_level,
+          identity_number,
+          identity_card_url,
+          kelas,
+          semester,
+          tempat_lahir,
+          tanggal_lahir,
+          jenis_kelamin,
+          alamat
         )
       `,
       { count: "exact" },
     )
 
-    // Apply all filters except pagination
     if (status !== "all") {
       query = query.eq("status", status)
     }
-
     if (competition !== "all") {
       query = query.eq("competitions.code", competition)
     }
-
     if (education !== "all") {
       query = query.eq("profiles!registrations_user_id_fkey.education_level", education)
     }
-
     if (dateFrom) {
       query = query.gte("created_at", dateFrom)
     }
-
     if (dateTo) {
       query = query.lte("created_at", dateTo + "T23:59:59.999Z")
     }
-
     if (search) {
       query = query.or(
-        `profiles!registrations_user_id_fkey.full_name.ilike.%${search}%,profiles!registrations_user_id_fkey.email.ilike.%${search}%,profiles!registrations_user_id_fkey.school_institution.ilike.%${search}%,profiles!registrations_user_id_fkey.identity_number.ilike.%${search}%`
+        `profiles!registrations_user_id_fkey.full_name.ilike.%${search}%,profiles!registrations_user_id_fkey.email.ilike.%${search}%,profiles!registrations_user_id_fkey.school_institution.ilike.%${search}%,profiles!registrations_user_id_fkey.identity_number.ilike.%${search}%`,
       )
     }
 
-    // Fetch all filtered data (without pagination for sorting)
     const { data: allRegistrations, error, count } = await query
 
     if (error) {
@@ -88,18 +95,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch registrations" }, { status: 500 })
     }
 
-    // FIXED: Apply sorting in-memory with proper data structure handling
     let sortedRegistrations = allRegistrations || []
     
     if (sortedRegistrations.length > 1) {
-      sortedRegistrations = sortedRegistrations.sort((a, b) => {
-        let valueA: string | number = ""
-        let valueB: string | number = ""
+      sortedRegistrations = sortedRegistrations.sort((a: any, b: any) => {
+        const getProfile = (item: any) => (Array.isArray(item.profiles) ? item.profiles[0] : item.profiles)
+        const getCompetition = (item: any) => (Array.isArray(item.competitions) ? item.competitions[0] : item.competitions)
         
-        // Helper function to safely get first item from array or return object
-        const getProfile = (item: any) => Array.isArray(item.profiles) ? item.profiles[0] : item.profiles
-        const getCompetition = (item: any) => Array.isArray(item.competitions) ? item.competitions[0] : item.competitions
-        
+        let valueA: any = ""
+        let valueB: any = ""
+
         switch (sortBy) {
           case "profiles.full_name":
             valueA = getProfile(a)?.full_name?.toLowerCase() || ""
@@ -109,17 +114,9 @@ export async function GET(request: NextRequest) {
             valueA = getProfile(a)?.education_level || ""
             valueB = getProfile(b)?.education_level || ""
             break
-          case "competitions.name":
-            valueA = getCompetition(a)?.name || ""
-            valueB = getCompetition(b)?.name || ""
-            break
           case "competitions.code":
             valueA = getCompetition(a)?.code || ""
             valueB = getCompetition(b)?.code || ""
-            break
-          case "status":
-            valueA = a.status || ""
-            valueB = b.status || ""
             break
           case "created_at":
           default:
@@ -130,10 +127,7 @@ export async function GET(request: NextRequest) {
         
         let comparison = 0
         if (typeof valueA === "string" && typeof valueB === "string") {
-          comparison = valueA.localeCompare(valueB, 'id', { 
-            numeric: true,
-            caseFirst: 'lower' 
-          })
+          comparison = valueA.localeCompare(valueB)
         } else {
           comparison = valueA < valueB ? -1 : valueA > valueB ? 1 : 0
         }
@@ -142,33 +136,37 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // FIXED: Apply pagination AFTER sorting
-    const totalItems = sortedRegistrations.length
+    // ========================================================================
+    // PERBAIKAN DI SINI: Normalisasi struktur data sebelum mengirim ke client
+    // ========================================================================
+    const normalizedRegistrations = sortedRegistrations.map((reg: any) => ({
+      ...reg,
+      profiles: Array.isArray(reg.profiles) ? reg.profiles[0] : reg.profiles,
+      competitions: Array.isArray(reg.competitions) ? reg.competitions[0] : reg.competitions,
+    }));
+
     const from = (page - 1) * limit
     const to = from + limit
-    const paginatedRegistrations = sortedRegistrations.slice(from, to)
+    // Gunakan data yang sudah dinormalisasi untuk paginasi
+    const paginatedRegistrations = normalizedRegistrations.slice(from, to)
 
-    const totalPages = Math.ceil(totalItems / limit)
-    const hasNextPage = page < totalPages
-    const hasPrevPage = page > 1
-
+    const totalPages = Math.ceil((count || 0) / limit)
 
     const response = NextResponse.json({
       data: paginatedRegistrations,
       pagination: {
         page,
         limit,
-        total: count || 0, // Use original count for total records
-        totalPages: Math.ceil((count || 0) / limit), // Calculate pages based on total DB records
-        hasNextPage,
-        hasPrevPage,
+        total: count || 0,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
       },
     })
 
-    // Cache for 30 seconds to reduce database load
     response.headers.set("Cache-Control", "public, s-maxage=30, stale-while-revalidate=60")
-
     return response
+
   } catch (error) {
     console.error("Error in GET /api/admin/registrations:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
