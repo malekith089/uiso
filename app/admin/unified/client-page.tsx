@@ -49,6 +49,7 @@ import {
   ExternalLink,
   AlertCircle,
   Download,
+  Edit,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { showErrorToast, showSuccessToast, withRetry } from "@/lib/error-handler"
@@ -758,6 +759,48 @@ const handleStatusChange = async (id: string, newStatus: string) => {
   }
 }
 
+  const [showEditSubjectDialog, setShowEditSubjectDialog] = useState(false)
+  const [editingRegistration, setEditingRegistration] = useState<UnifiedRegistration | null>(null)
+  const [selectedSubject, setSelectedSubject] = useState("")
+
+  const handleEditSubject = (registration: UnifiedRegistration) => {
+  setEditingRegistration(registration)
+  setSelectedSubject(registration.selected_subject_id || "")
+  setShowEditSubjectDialog(true)
+}
+
+const handleSaveSubject = async () => {
+  if (!editingRegistration || !selectedSubject) return
+
+  setLoading(true)
+  try {
+    const { error } = await supabase
+      .from("registrations")
+      .update({
+        selected_subject_id: selectedSubject,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", editingRegistration.id)
+
+    if (error) throw error
+
+    // Update state lokal
+    setRegistrations(prev => prev.map(reg => 
+      reg.id === editingRegistration.id 
+        ? { ...reg, selected_subject_id: selectedSubject, updated_at: new Date().toISOString() }
+        : reg
+    ))
+
+    const subjectName = ospSubjects.find(s => s.id === selectedSubject)?.name
+    showSuccessToast(`Bidang OSP berhasil diubah menjadi ${subjectName}`)
+    setShowEditSubjectDialog(false)
+  } catch (error) {
+    showErrorToast(error, "handleSaveSubject")
+  } finally {
+    setLoading(false)
+  }
+}
+
   return (
     <ErrorBoundary>
       <div className="space-y-6">
@@ -1037,10 +1080,30 @@ const handleStatusChange = async (id: string, newStatus: string) => {
                         </TableCell>
                         <TableCell>
                           {(() => {
-                            if (registration.competitions.code !== "OSP" || !registration.selected_subject_id)
-                              return "-"
+                            if (registration.competitions.code !== "OSP") return "-"
+                            
                             const subject = ospSubjects.find((s) => s.id === registration.selected_subject_id)
-                            return <Badge variant="outline">{subject?.name || "ID Tidak Dikenal"}</Badge>
+                            
+                            return (
+                              <div className="flex items-center gap-2">
+                                {subject ? (
+                                  <Badge variant="outline">{subject.name}</Badge>
+                                ) : (
+                                  <Badge variant="destructive" className="text-xs">
+                                    Belum Dipilih
+                                  </Badge>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => handleEditSubject(registration)}
+                                  title="Edit Bidang OSP"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )
                           })()}
                         </TableCell>
                         <TableCell>
@@ -1087,6 +1150,12 @@ const handleStatusChange = async (id: string, newStatus: string) => {
                                 <Eye className="mr-2 h-4 w-4" />
                                 Lihat Detail
                               </DropdownMenuItem>
+                                {registration.competitions.code === "OSP" && (
+                                  <DropdownMenuItem onClick={() => handleEditSubject(registration)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit Bidang OSP
+                                  </DropdownMenuItem>
+                                )}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
                                 onClick={() => handleStatusChange(registration.id, "approved")}
@@ -1363,7 +1432,20 @@ const handleStatusChange = async (id: string, newStatus: string) => {
                       </div>
                       {selectedRegistration.competitions.code === "OSP" && selectedRegistration.selected_subject_id && (
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium">Bidang OSP</Label>
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium">Bidang OSP</Label>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedRegistration(null)
+                                handleEditSubject(selectedRegistration)
+                              }}
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              Edit
+                            </Button>
+                          </div>
                           <p className="text-sm bg-gray-50 p-2 rounded">
                             {ospSubjects.find((s) => s.id === selectedRegistration.selected_subject_id)?.name ||
                               "ID Tidak Dikenal"}
@@ -1739,6 +1821,49 @@ const handleStatusChange = async (id: string, newStatus: string) => {
           </Dialog>
         )}
       </div>
+      <Dialog open={showEditSubjectDialog} onOpenChange={setShowEditSubjectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Bidang OSP</DialogTitle>
+            <DialogDescription>
+              Ubah bidang OSP untuk peserta: {editingRegistration?.profiles.full_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="subject-select">Pilih Bidang OSP</Label>
+              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih bidang OSP..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {ospSubjects.map((subject) => (
+                    <SelectItem key={subject.id} value={subject.id}>
+                      {subject.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              <p>Bidang saat ini: <strong>
+                {ospSubjects.find(s => s.id === editingRegistration?.selected_subject_id)?.name || "Belum Dipilih"}
+              </strong></p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditSubjectDialog(false)}>
+              Batal
+            </Button>
+            <Button 
+              onClick={handleSaveSubject} 
+              disabled={loading || !selectedSubject || selectedSubject === editingRegistration?.selected_subject_id}
+            >
+              {loading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ErrorBoundary>
   )
 }
