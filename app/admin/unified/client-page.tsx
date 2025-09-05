@@ -590,10 +590,30 @@ const handleStatusChange = async (id: string, newStatus: string): Promise<void> 
     return
   }
 
-  // Lanjutkan dengan update status...
+  // Store original data untuk rollback
+  const originalStatus = registration.status
+  const originalUpdatedAt = registration.updated_at
+  
+  // 🔥 OPTIMISTIC UPDATE: Update state lokal dulu
+  setRegistrations(prev => prev.map(reg => 
+    reg.id === id 
+      ? { ...reg, status: newStatus, updated_at: new Date().toISOString() }
+      : reg
+  ))
+
+  // Update selectedRegistration jika sedang dilihat di dialog
+  if (selectedRegistration?.id === id) {
+    setSelectedRegistration(prev => prev ? {
+      ...prev, 
+      status: newStatus, 
+      updated_at: new Date().toISOString()
+    } : null)
+  }
+
   setLoadingRows(prev => new Set(prev).add(id))
   
   try {
+    // Database update dengan retry
     await withRetry(async () => {
       const { error } = await supabase
         .from("registrations")
@@ -606,18 +626,28 @@ const handleStatusChange = async (id: string, newStatus: string): Promise<void> 
       if (error) throw error
     })
 
+    showSuccessToast(`Status berhasil diubah menjadi ${newStatus}`)
+    
+  } catch (error) {
+    // 🔥 ROLLBACK: Kembalikan state lokal ke kondisi semula
     setRegistrations(prev => prev.map(reg => 
       reg.id === id 
-        ? { ...reg, status: newStatus, updated_at: new Date().toISOString() }
+        ? { ...reg, status: originalStatus, updated_at: originalUpdatedAt }
         : reg
     ))
 
-    showSuccessToast(`Status berhasil diubah menjadi ${newStatus}`)
-    } catch (error) {
-      showErrorToast(error, "handleStatusChange")
-      throw error // Re-throw error agar bisa di-catch di handleDialogStatusChange
-    } finally {
-    // Remove loading untuk row ini
+    // Rollback selectedRegistration juga
+    if (selectedRegistration?.id === id) {
+      setSelectedRegistration(prev => prev ? {
+        ...prev, 
+        status: originalStatus, 
+        updated_at: originalUpdatedAt
+      } : null)
+    }
+
+    showErrorToast(error, "handleStatusChange")
+    throw error // Re-throw untuk handleDialogStatusChange
+  } finally {
     setLoadingRows(prev => {
       const newSet = new Set(prev)
       newSet.delete(id)
