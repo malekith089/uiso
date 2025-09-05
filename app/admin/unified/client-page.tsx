@@ -449,47 +449,60 @@ export default function UnifiedManagementClient({
   }
 
   const handleVerificationCheck = async (registrationId: string, field: string, checked: boolean) => {
-    try {
-      // Update local state immediately for better UX
-      setVerificationChecks((prev) => ({
-        ...prev,
-        [registrationId]: {
-          ...prev[registrationId],
-          [field]: checked,
-        },
-      }))
+  try {
+    // Update local state immediately for better UX
+    setVerificationChecks((prev) => ({
+      ...prev,
+      [registrationId]: {
+        ...prev[registrationId],
+        [field]: checked,
+      },
+    }))
 
-      // Save to database
-      const response = await fetch("/api/admin/registrations/verify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          registrationId,
-          verificationType: field,
-          isVerified: checked,
-        }),
-      })
+    // Save to database
+    const response = await fetch("/api/admin/registrations/verify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        registrationId,
+        verificationType: field,
+        isVerified: checked,
+      }),
+    })
 
-      if (!response.ok) {
-        throw new Error("Failed to update verification status")
-      }
-
-      console.log("[v0] Verification status updated:", { registrationId, field, checked })
-    } catch (error) {
-      console.error("[v0] Error updating verification:", error)
-      // Revert local state on error
-      setVerificationChecks((prev) => ({
-        ...prev,
-        [registrationId]: {
-          ...prev[registrationId],
-          [field]: !checked,
-        },
-      }))
-      showErrorToast(error, "handleVerificationCheck")
+    if (!response.ok) {
+      throw new Error("Failed to update verification status")
     }
+
+    console.log("[v0] Verification status updated:", { registrationId, field, checked })
+    
+    // 🆕 TAMBAHKAN TOAST SUCCESS
+    const fieldLabels = {
+      identity_card: "Kartu Identitas",
+      engagement_proof: "Bukti Engagement", 
+      payment_proof: "Bukti Pembayaran"
+    }
+    
+    const fieldLabel = fieldLabels[field as keyof typeof fieldLabels] || field
+    const statusText = checked ? "diverifikasi" : "dibatalkan verifikasinya"
+    
+    showSuccessToast(`${fieldLabel} berhasil ${statusText}`)
+    
+  } catch (error) {
+    console.error("[v0] Error updating verification:", error)
+    // Revert local state on error
+    setVerificationChecks((prev) => ({
+      ...prev,
+      [registrationId]: {
+        ...prev[registrationId],
+        [field]: !checked,
+      },
+    }))
+    showErrorToast(error, "handleVerificationCheck")
   }
+}
 
   const isAllVerified = (registration: UnifiedRegistration) => {
     if (!registration) return false
