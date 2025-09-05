@@ -24,6 +24,11 @@ export interface UnifiedRegistration {
   created_at: string
   updated_at: string
   selected_subject_id?: string | null
+  identity_card_verified?: boolean
+  engagement_proof_verified?: boolean
+  payment_proof_verified?: boolean
+  verified_by?: string | null
+  verified_at?: string | null
   profiles: {
     id: string
     full_name: string

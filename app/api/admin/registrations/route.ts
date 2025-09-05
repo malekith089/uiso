@@ -18,64 +18,67 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get("sortOrder") || "desc"
 
     let query = supabase.from("registrations").select(
-      `
-        id,
-        status,
-        team_name,
-        identity_card_url,
-        engagement_proof_url,
-        payment_proof_url,
-        created_at,
-        updated_at,
-        selected_subject_id,
-        identity_card_verified,
-        engagement_proof_verified,
-        payment_proof_verified,
-        verified_by,
-        verified_at,
-        profiles!registrations_user_id_fkey (
-          id,
-          full_name,
-          email,
-          school_institution,
-          education_level,
-          phone,
-          identity_number
-        ),
-        competitions (
-          name,
-          code,
-          participant_type
-        ),
-        team_members (
-          id,
-          full_name,
-          email,
-          phone,
-          school_institution,
-          education_level,
-          identity_number,
-          identity_card_url,
-          identity_card_verified,
-          kelas,
-          semester,
-          tempat_lahir,
-          tanggal_lahir,
-          jenis_kelamin,
-          alamat
-        )
-      `,
-      { count: "exact" },
+  `
+    id,
+    status,
+    team_name,
+    identity_card_url,
+    engagement_proof_url,
+    payment_proof_url,
+    created_at,
+    updated_at,
+    selected_subject_id,
+    identity_card_verified,
+    engagement_proof_verified,
+    payment_proof_verified,
+    verified_by,
+    verified_at,
+    profiles!user_id (
+      id,
+      full_name,
+      email,
+      school_institution,
+      education_level,
+      phone,
+      identity_number
+    ),
+    competitions!competition_id (
+      name,
+      code,
+      participant_type
+    ),
+    team_members (
+      id,
+      full_name,
+      email,
+      phone,
+      school_institution,
+      education_level,
+      identity_number,
+      identity_card_url,
+      identity_card_verified,
+      kelas,
+      semester,
+      tempat_lahir,
+      tanggal_lahir,
+      jenis_kelamin,
+      alamat
     )
+  `,
+  { count: "exact" },
+)
 
     if (status !== "all") {
       query = query.eq("status", status)
     }
+    // Filter kompetisi - gunakan foreign key reference yang benar
     if (competition !== "all") {
       query = query.eq("competitions.code", competition)
     }
+
+    // Filter education level - gunakan foreign key reference yang benar  
     if (education !== "all") {
-      query = query.eq("profiles!registrations_user_id_fkey.education_level", education)
+      query = query.eq("profiles.education_level", education)
     }
     if (dateFrom) {
       query = query.gte("created_at", dateFrom)
@@ -83,20 +86,54 @@ export async function GET(request: NextRequest) {
     if (dateTo) {
       query = query.lte("created_at", dateTo + "T23:59:59.999Z")
     }
+    // Search akan dihandle secara manual setelah data diambil
+    let searchTerm = null
     if (search) {
-      query = query.or(
-        `profiles!registrations_user_id_fkey.full_name.ilike.%${search}%,profiles!registrations_user_id_fkey.email.ilike.%${search}%,profiles!registrations_user_id_fkey.school_institution.ilike.%${search}%,profiles!registrations_user_id_fkey.identity_number.ilike.%${search}%`,
-      )
+      searchTerm = search.trim().toLowerCase()
     }
 
     const { data: allRegistrations, error, count } = await query
+
+    let filteredRegistrations = allRegistrations || []
+
+// Manual search filtering
+if (searchTerm && filteredRegistrations.length > 0) {
+  filteredRegistrations = filteredRegistrations.filter((reg: any) => {
+    const profile = Array.isArray(reg.profiles) ? reg.profiles[0] : reg.profiles
+    if (!profile) return false
+    
+    const searchableText = [
+      profile.full_name || '',
+      profile.email || '',
+      profile.school_institution || '',
+      profile.identity_number || ''
+    ].join(' ').toLowerCase()
+    
+    return searchableText.includes(searchTerm)
+  })
+}
+
+// Manual filter untuk kompetisi dan education (backup jika database filter gagal)
+if (competition !== "all") {
+  filteredRegistrations = filteredRegistrations.filter((reg: any) => {
+    const comp = Array.isArray(reg.competitions) ? reg.competitions[0] : reg.competitions
+    return comp?.code === competition
+  })
+}
+
+if (education !== "all") {
+  filteredRegistrations = filteredRegistrations.filter((reg: any) => {
+    const profile = Array.isArray(reg.profiles) ? reg.profiles[0] : reg.profiles
+    return profile?.education_level === education
+  })
+}
 
     if (error) {
       console.error("Error fetching registrations:", error)
       return NextResponse.json({ error: "Failed to fetch registrations" }, { status: 500 })
     }
 
-    let sortedRegistrations = allRegistrations || []
+    let sortedRegistrations = filteredRegistrations
     
     if (sortedRegistrations.length > 1) {
       sortedRegistrations = sortedRegistrations.sort((a: any, b: any) => {
@@ -151,14 +188,19 @@ export async function GET(request: NextRequest) {
     // Gunakan data yang sudah dinormalisasi untuk paginasi
     const paginatedRegistrations = normalizedRegistrations.slice(from, to)
 
-    const totalPages = Math.ceil((count || 0) / limit)
+    // Update count berdasarkan filtered data
+    const finalCount = searchTerm || competition !== "all" || education !== "all" 
+      ? filteredRegistrations.length 
+      : count || 0
+
+    const totalPages = Math.ceil(finalCount / limit)
 
     const response = NextResponse.json({
       data: paginatedRegistrations,
       pagination: {
         page,
         limit,
-        total: count || 0,
+        total: finalCount,
         totalPages,
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1,

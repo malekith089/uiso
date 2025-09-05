@@ -204,7 +204,7 @@ export default function UnifiedManagementClient({
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm)
-    }, 500)
+    }, 300) // Kurangi dari 500ms ke 300ms
 
     return () => clearTimeout(timer)
   }, [searchTerm])
@@ -906,7 +906,7 @@ const handleSaveSubject = async () => {
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10"
                     />
-                    {loading && searchTerm !== debouncedSearchTerm && (
+                    {(loading || searchTerm !== debouncedSearchTerm) && (
                       <div className="absolute right-3 top-3">
                         <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full"></div>
                       </div>
@@ -1504,7 +1504,7 @@ const handleSaveSubject = async () => {
                                   size="sm"
                                   variant="secondary"
                                   className="absolute top-2 right-2"
-                                  onClick={() => window.open(selectedRegistration.identity_card_url, "_blank")}
+                                  onClick={() => selectedRegistration.identity_card_url && window.open(selectedRegistration.identity_card_url, "_blank")}
                                 >
                                   <ExternalLink className="w-3 h-3" />
                                 </Button>
@@ -1551,7 +1551,7 @@ const handleSaveSubject = async () => {
                                 size="sm"
                                 variant="secondary"
                                 className="absolute top-2 right-2"
-                                onClick={() => window.open(selectedRegistration.engagement_proof_url, "_blank")}
+                                onClick={() => selectedRegistration.payment_proof_url && window.open(selectedRegistration.payment_proof_url, "_blank")}
                               >
                                 <ExternalLink className="w-3 h-3" />
                               </Button>
@@ -1593,7 +1593,7 @@ const handleSaveSubject = async () => {
                                 size="sm"
                                 variant="secondary"
                                 className="absolute top-2 right-2"
-                                onClick={() => window.open(selectedRegistration.payment_proof_url, "_blank")}
+                                onClick={() => selectedRegistration.engagement_proof_url && window.open(selectedRegistration.engagement_proof_url, "_blank")}
                               >
                                 <ExternalLink className="w-3 h-3" />
                               </Button>
@@ -1779,13 +1779,14 @@ const handleSaveSubject = async () => {
       <Button
         variant="outline"
         size="sm"
-        onClick={() =>
-          member.identity_card_url &&
+        onClick={() => {
+        if (member.identity_card_url) {
           downloadFile(
             member.identity_card_url,
             `KTP_${member.full_name}.${member.identity_card_url.split(".").pop()}`,
           )
         }
+      }}
         disabled={!member.identity_card_url}
       >
         <Download className="w-4 h-4 mr-2" />
@@ -1795,7 +1796,7 @@ const handleSaveSubject = async () => {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => window.open(member.identity_card_url, "_blank")}
+          onClick={() => member.identity_card_url && window.open(member.identity_card_url, "_blank")}
         >
           <Eye className="w-4 h-4" />
         </Button>
