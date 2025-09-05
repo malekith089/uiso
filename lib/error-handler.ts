@@ -3,7 +3,7 @@ import { toast } from "@/hooks/use-toast"
 export interface AppError extends Error {
   code?: string
   statusCode?: number
-  details?: any
+  details?: any // Ditambahkan
 }
 
 export class NetworkError extends Error implements AppError {
@@ -19,10 +19,12 @@ export class NetworkError extends Error implements AppError {
 export class ValidationError extends Error implements AppError {
   code = "VALIDATION_ERROR"
   statusCode = 400
+  details?: any // Ditambahkan
 
-  constructor(message = "Data yang dimasukkan tidak valid.") {
+  constructor(message = "Data yang dimasukkan tidak valid.", details?: any) {
     super(message)
     this.name = "ValidationError"
+    this.details = details
   }
 }
 
@@ -82,9 +84,9 @@ export function handleError(error: unknown, context?: string): AppError {
       case "PGRST116":
         return new NotFoundError("Data tidak ditemukan.")
       case "23505":
-        return new ValidationError("Data sudah ada. Silakan gunakan data yang berbeda.")
+        return new ValidationError("Data sudah ada. Silakan gunakan data yang berbeda.", supabaseError.details)
       case "23503":
-        return new ValidationError("Data yang direferensikan tidak valid.")
+        return new ValidationError("Data yang direferensikan tidak valid.", supabaseError.details)
       case "42501":
         return new PermissionError()
       default:

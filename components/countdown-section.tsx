@@ -55,7 +55,7 @@ export function CountdownSection() {
             </span>
             <br />
             <span className="text-white">
-              Close Batch 1 Registration!
+              Countdown to Close Registration Batch 1
             </span>
           </h1>
           
@@ -98,7 +98,7 @@ export function CountdownSection() {
           </span>
           <br />
           <span className="text-white [text-shadow:0_4px_8px_rgba(0,0,0,0.5)]">
-           Close Batch 1 Registration!
+            Countdown to Close Registration Batch 1
           </span>
         </h1>
 
