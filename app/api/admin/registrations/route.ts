@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
           education_level,
           identity_number,
           identity_card_url,
+          identity_card_verified,
           kelas,
           semester,
           tempat_lahir,

@@ -364,9 +364,7 @@ export default function UnifiedManagementClient({
     try {
       const response = await fetch("/api/admin/bulk-approval", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           registrationIds: selectedIds,
           status: bulkStatus,
@@ -377,7 +375,12 @@ export default function UnifiedManagementClient({
       if (response.ok) {
         const result = await response.json()
 
-        await fetchRegistrations()
+        // 🔥 Update state lokal untuk bulk changes
+        setRegistrations(prev => prev.map(reg => 
+          selectedIds.includes(reg.id)
+            ? { ...reg, status: bulkStatus, updated_at: new Date().toISOString() }
+            : reg
+        ))
 
         showSuccessToast(result.message)
         setShowBulkDialog(false)
@@ -505,56 +508,114 @@ export default function UnifiedManagementClient({
 }
 
   const isAllVerified = (registration: UnifiedRegistration) => {
-    if (!registration) return false
+  if (!registration) return false
+  const checks = verificationChecks[registration.id]
+  if (!checks) return false
+
+  console.log("[CLIENT] Checking verification for:", registration.profiles.full_name, {
+    competitionCode: registration.competitions.code,
+    checks,
+    teamMembersCount: registration.team_members?.length || 0
+  })
+
+  // Logika untuk SCC (kompetisi tim)
+  if (registration.competitions.code === "SCC") {
+    const basicVerified = checks.engagement_proof && checks.payment_proof
+    
+    if (!registration.team_members || registration.team_members.length === 0) {
+      return basicVerified
+    }
+    
+    const allMembersVerified = registration.team_members.every((member: any) => {
+      const memberVerified = checks.team_members[member.id]?.identity_card_verified === true
+      console.log(`[CLIENT] Member ${member.full_name} verified:`, memberVerified)
+      return memberVerified
+    })
+    
+    return basicVerified && allMembersVerified
+  }
+
+  // Logika untuk kompetisi individu (OSP, EGK)
+  const individualVerified = checks.identity_card && checks.engagement_proof && checks.payment_proof
+  return individualVerified
+}
+
+const [loadingRows, setLoadingRows] = useState<Set<string>>(new Set())
+
+const handleStatusChange = async (id: string, newStatus: string) => {
+  // Temukan registration berdasarkan ID
+  const registration = registrations.find(reg => reg.id === id)
+  
+  if (!registration) {
+    showErrorToast(new Error("Registrasi tidak ditemukan"), "handleStatusChange")
+    return
+  }
+
+  // Cek verifikasi hanya jika status akan diubah menjadi approved
+  if (newStatus === "approved" && !isAllVerified(registration)) {
+    const competitionType = registration.competitions.code === "SCC" ? "tim" : "individu"
+    const missingDocs = []
+    
     const checks = verificationChecks[registration.id]
-    if (!checks) return false
-
-    // Logika untuk SCC
+    
     if (registration.competitions.code === "SCC") {
-      const allMembersVerified =
-        registration.team_members && registration.team_members.length > 0
-          ? registration.team_members.every(
-              (member: any) => checks.team_members[member.id]?.identity_card_verified,
-            )
-          : true // Anggap true jika tidak ada anggota tim (kasus aneh)
-
-      return checks.engagement_proof && checks.payment_proof && allMembersVerified
+      if (!checks?.engagement_proof) missingDocs.push("Bukti Engagement")
+      if (!checks?.payment_proof) missingDocs.push("Bukti Pembayaran")
+      
+      if (registration.team_members && registration.team_members.length > 0) {
+        const unverifiedMembers = registration.team_members.filter((member: any) => 
+          !checks?.team_members[member.id]?.identity_card_verified
+        )
+        if (unverifiedMembers.length > 0) {
+          missingDocs.push(`Kartu Identitas ${unverifiedMembers.length} anggota tim`)
+        }
+      }
+    } else {
+      if (!checks?.identity_card) missingDocs.push("Kartu Identitas")
+      if (!checks?.engagement_proof) missingDocs.push("Bukti Engagement") 
+      if (!checks?.payment_proof) missingDocs.push("Bukti Pembayaran")
     }
-
-    // Logika untuk kompetisi lain
-    return checks.identity_card && checks.engagement_proof && checks.payment_proof
+    
+    const message = `Harap verifikasi semua berkas terlebih dahulu untuk kompetisi ${competitionType}:\n\nBelum diverifikasi:\n${missingDocs.map(doc => `• ${doc}`).join('\n')}`
+    
+    alert(message)
+    return
   }
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    if (newStatus === "approved" && !isAllVerified(id)) {
-      alert("Harap verifikasi semua berkas terlebih dahulu sebelum menyetujui pendaftaran.")
-      return
-    }
+  // Lanjutkan dengan update status...
+  setLoadingRows(prev => new Set(prev).add(id))
+  
+  try {
+    await withRetry(async () => {
+      const { error } = await supabase
+        .from("registrations")
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
 
-    setLoading(true)
-    try {
-      await withRetry(async () => {
-        const { error } = await supabase
-          .from("registrations")
-          .update({
-            status: newStatus,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", id)
+      if (error) throw error
+    })
 
-        if (error) throw error
-      })
+    setRegistrations(prev => prev.map(reg => 
+      reg.id === id 
+        ? { ...reg, status: newStatus, updated_at: new Date().toISOString() }
+        : reg
+    ))
 
-      await fetchRegistrations()
-
-      showSuccessToast(`Status berhasil diubah menjadi ${newStatus}`)
-      setStatusChangeReason("")
-    } catch (error) {
-      showErrorToast(error, "handleStatusChange")
-    } finally {
-      setLoading(false)
-    }
+    showSuccessToast(`Status berhasil diubah menjadi ${newStatus}`)
+  } catch (error) {
+    showErrorToast(error, "handleStatusChange")
+  } finally {
+    // Remove loading untuk row ini
+    setLoadingRows(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(id)
+      return newSet
+    })
   }
+}
 
   const handleSort = (column: string) => {
     console.log("[v0] Sort clicked:", { column, currentSortBy: sortBy, currentSortOrder: sortOrder })
@@ -992,12 +1053,16 @@ export default function UnifiedManagementClient({
                           {registration.profiles.email}
                         </TableCell>
                         <TableCell>{new Date(registration.created_at).toLocaleDateString("id-ID")}</TableCell>
-                        <TableCell>{getStatusBadge(registration.status)}</TableCell>
+                        <TableCell>
+                          <div className="transition-all duration-300 ease-in-out">
+                            {getStatusBadge(registration.status)}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Select
                             value={registration.status}
                             onValueChange={(newStatus) => handleStatusChange(registration.id, newStatus)}
-                            disabled={loading}
+                            disabled={loadingRows.has(registration.id)}
                           >
                             <SelectTrigger className="w-[120px]">
                               <SelectValue />
@@ -1023,16 +1088,27 @@ export default function UnifiedManagementClient({
                                 Lihat Detail
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleStatusChange(registration.id, "approved")}>
+                              <DropdownMenuItem 
+                                onClick={() => handleStatusChange(registration.id, "approved")}
+                                disabled={loadingRows.has(registration.id)}
+                              >
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Setujui Cepat
+                                {loadingRows.has(registration.id) && (
+                                  <div className="ml-auto animate-spin h-3 w-3 border border-gray-300 border-t-green-600 rounded-full"></div>
+                                )}
                               </DropdownMenuItem>
+
                               <DropdownMenuItem
                                 className="text-red-600"
                                 onClick={() => handleStatusChange(registration.id, "rejected")}
+                                disabled={loadingRows.has(registration.id)}
                               >
                                 <XCircle className="mr-2 h-4 w-4" />
                                 Tolak Cepat
+                                {loadingRows.has(registration.id) && (
+                                  <div className="ml-auto animate-spin h-3 w-3 border border-gray-300 border-t-red-600 rounded-full"></div>
+                                )}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
