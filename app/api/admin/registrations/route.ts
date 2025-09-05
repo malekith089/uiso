@@ -33,36 +33,14 @@ export async function GET(request: NextRequest) {
     payment_proof_verified,
     verified_by,
     verified_at,
-    profiles!user_id (
-      id,
-      full_name,
-      email,
-      school_institution,
-      education_level,
-      phone,
-      identity_number
+    profiles!user_id ( *
     ),
     competitions!competition_id (
       name,
       code,
       participant_type
     ),
-    team_members (
-      id,
-      full_name,
-      email,
-      phone,
-      school_institution,
-      education_level,
-      identity_number,
-      identity_card_url,
-      identity_card_verified,
-      kelas,
-      semester,
-      tempat_lahir,
-      tanggal_lahir,
-      jenis_kelamin,
-      alamat
+    team_members ( *
     )
   `,
   { count: "exact" },

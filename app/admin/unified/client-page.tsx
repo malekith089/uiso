@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -50,12 +51,14 @@ import {
   AlertCircle,
   Download,
   Edit,
+  Save,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { showErrorToast, showSuccessToast, withRetry } from "@/lib/error-handler"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { useToast } from "@/hooks/use-toast"
 import type { UnifiedRegistration } from "./page"
+
 
 const getFileType = (url: string): "image" | "pdf" | "unknown" => {
   const extension = url.split(".").pop()?.toLowerCase()
@@ -146,7 +149,9 @@ export default function UnifiedManagementClient({
   const [loading, setLoading] = useState(true)
   const [showDetailDialog, setShowDetailDialog] = useState(false)
   const [statusChangeReason, setStatusChangeReason] = useState("")
-
+  const [showEditProfileDialog, setShowEditProfileDialog] = useState(false)
+  const [editingProfile, setEditingProfile] = useState<any | null>(null)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [currentPage, setCurrentPage] = useState(Number.parseInt(searchParams.get("page") || "1"))
   const [totalPages, setTotalPages] = useState(1)
   const [totalRecords, setTotalRecords] = useState(0)
@@ -801,6 +806,48 @@ const handleSaveSubject = async () => {
   }
 }
 
+const handleEditProfile = (registration: UnifiedRegistration) => {
+  setEditingProfile(registration.profiles)
+  setSelectedRegistration(registration) // Simpan seluruh data registrasi
+  setShowEditProfileDialog(true)
+}
+
+const handleSaveProfile = async () => {
+  if (!editingProfile || !selectedRegistration) return
+
+  setIsSavingProfile(true)
+  try {
+    const { error } = await supabase
+      .from("profiles")
+      .update(editingProfile)
+      .eq("id", editingProfile.id)
+
+    if (error) throw error
+
+    // Perbarui state lokal registrations
+    setRegistrations(prev =>
+      prev.map(reg =>
+        reg.id === selectedRegistration.id
+          ? { ...reg, profiles: editingProfile }
+          : reg
+      )
+    )
+
+    showSuccessToast("Profil peserta berhasil diperbarui")
+    setShowEditProfileDialog(false)
+    setEditingProfile(null)
+  } catch (error) {
+    showErrorToast(error, "handleSaveProfile")
+  } finally {
+    setIsSavingProfile(false)
+  }
+}
+
+const handleProfileInputChange = (field: string, value: any) => {
+  setEditingProfile((prev: any) => ({ ...prev, [field]: value }))
+}
+
+
   return (
     <ErrorBoundary>
       <div className="space-y-6">
@@ -1365,60 +1412,83 @@ const handleSaveSubject = async () => {
 
                 <TabsContent value="info" className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <User className="w-5 h-5" />
-                      Informasi Dasar
-                    </h3>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          Nama Lengkap
-                        </Label>
-                        <p className="text-sm bg-gray-50 p-2 rounded">{selectedRegistration.profiles.full_name}</p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium flex items-center gap-2">
-                          <Mail className="w-4 h-4" />
-                          Email
-                        </Label>
-                        <p className="text-sm bg-gray-50 p-2 rounded">{selectedRegistration.profiles.email}</p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium flex items-center gap-2">
-                          <School className="w-4 h-4" />
-                          Sekolah/Institusi
-                        </Label>
-                        <p className="text-sm bg-gray-50 p-2 rounded">
-                          {selectedRegistration.profiles.school_institution}
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium flex items-center gap-2">
-                          <GraduationCap className="w-4 h-4" />
-                          Jenjang Pendidikan
-                        </Label>
-                        <p className="text-sm bg-gray-50 p-2 rounded">
-                          {selectedRegistration.profiles.education_level}
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Nomor Identitas</Label>
-                        <p className="text-sm bg-gray-50 p-2 rounded">
-                          {selectedRegistration.profiles.identity_number}
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium flex items-center gap-2">
-                          <Phone className="w-4 h-4" />
-                          No. HP (Aktif WhatsApp)
-                        </Label>
-                        <p className="text-sm bg-gray-50 p-2 rounded">
-                          {selectedRegistration.profiles.phone || selectedRegistration.phone || "Belum diisi"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+  <h3 className="text-lg font-semibold mb-4 flex items-center justify-between">
+    <div className="flex items-center gap-2">
+      <User className="w-5 h-5" />
+      Informasi Dasar
+    </div>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => handleEditProfile(selectedRegistration)}
+    >
+      <Edit className="w-3 h-3 mr-2" />
+      Edit Profil
+    </Button>
+  </h3>
+  <div className="grid gap-4 md:grid-cols-2">
+    {/* Informasi Dasar */}
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">Nama Lengkap</Label>
+      <p className="text-sm bg-gray-50 p-2 rounded">{selectedRegistration.profiles.full_name}</p>
+    </div>
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">Email</Label>
+      <p className="text-sm bg-gray-50 p-2 rounded">{selectedRegistration.profiles.email}</p>
+    </div>
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">Sekolah/Institusi</Label>
+      <p className="text-sm bg-gray-50 p-2 rounded">{selectedRegistration.profiles.school_institution}</p>
+    </div>
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">Jenjang Pendidikan</Label>
+      <p className="text-sm bg-gray-50 p-2 rounded">{selectedRegistration.profiles.education_level}</p>
+    </div>
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">Nomor Identitas</Label>
+      <p className="text-sm bg-gray-50 p-2 rounded">{selectedRegistration.profiles.identity_number}</p>
+    </div>
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">No. HP (WhatsApp)</Label>
+      <p className="text-sm bg-gray-50 p-2 rounded">{selectedRegistration.profiles.phone || "Belum diisi"}</p>
+    </div>
+
+    {/* Informasi Tambahan */}
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">Tempat Lahir</Label>
+      <p className="text-sm bg-gray-50 p-2 rounded">{selectedRegistration.profiles.tempat_lahir || "Belum diisi"}</p>
+    </div>
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">Tanggal Lahir</Label>
+      <p className="text-sm bg-gray-50 p-2 rounded">
+        {selectedRegistration.profiles.tanggal_lahir
+          ? new Date(selectedRegistration.profiles.tanggal_lahir).toLocaleDateString("id-ID")
+          : "Belum diisi"}
+      </p>
+    </div>
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">Jenis Kelamin</Label>
+      <p className="text-sm bg-gray-50 p-2 rounded">{selectedRegistration.profiles.jenis_kelamin || "Belum diisi"}</p>
+    </div>
+    {selectedRegistration.profiles.education_level === "SMA/Sederajat" ? (
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Kelas</Label>
+        <p className="text-sm bg-gray-50 p-2 rounded">{selectedRegistration.profiles.kelas || "Belum diisi"}</p>
+      </div>
+    ) : (
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Semester</Label>
+        <p className="text-sm bg-gray-50 p-2 rounded">
+          {selectedRegistration.profiles.semester ? `Semester ${selectedRegistration.profiles.semester}` : "Belum diisi"}
+        </p>
+      </div>
+    )}
+    <div className="space-y-2 md:col-span-2">
+      <Label className="text-sm font-medium">Alamat Domisili</Label>
+      <p className="text-sm bg-gray-50 p-2 rounded min-h-[60px]">{selectedRegistration.profiles.alamat || "Belum diisi"}</p>
+    </div>
+  </div>
+</div>
 
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -1865,6 +1935,141 @@ const handleSaveSubject = async () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+<Dialog open={showEditProfileDialog} onOpenChange={setShowEditProfileDialog}>
+  <DialogContent className="max-w-3xl">
+    <DialogHeader>
+      <DialogTitle>Edit Profil Peserta</DialogTitle>
+      <DialogDescription>
+        Ubah data untuk: {editingProfile?.full_name}
+      </DialogDescription>
+    </DialogHeader>
+    {editingProfile && (
+      <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-4">
+        {/* Informasi Dasar */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Informasi Dasar</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="full_name">Nama Lengkap</Label>
+              <Input
+                id="full_name"
+                value={editingProfile.full_name || ""}
+                onChange={(e) => handleProfileInputChange("full_name", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="school_institution">Sekolah/Institusi</Label>
+              <Input
+                id="school_institution"
+                value={editingProfile.school_institution || ""}
+                onChange={(e) => handleProfileInputChange("school_institution", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="identity_number">Nomor Identitas</Label>
+              <Input
+                id="identity_number"
+                value={editingProfile.identity_number || ""}
+                onChange={(e) => handleProfileInputChange("identity_number", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">No. HP (WhatsApp)</Label>
+              <Input
+                id="phone"
+                value={editingProfile.phone || ""}
+                onChange={(e) => handleProfileInputChange("phone", e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Informasi Pribadi */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Informasi Pribadi</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="tempat_lahir">Tempat Lahir</Label>
+              <Input
+                id="tempat_lahir"
+                value={editingProfile.tempat_lahir || ""}
+                onChange={(e) => handleProfileInputChange("tempat_lahir", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tanggal_lahir">Tanggal Lahir</Label>
+              <Input
+                id="tanggal_lahir"
+                type="date"
+                value={editingProfile.tanggal_lahir || ""}
+                onChange={(e) => handleProfileInputChange("tanggal_lahir", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="jenis_kelamin">Jenis Kelamin</Label>
+              <Select
+                value={editingProfile.jenis_kelamin || ""}
+                onValueChange={(value) => handleProfileInputChange("jenis_kelamin", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih jenis kelamin" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Laki-laki">Laki-laki</SelectItem>
+                  <SelectItem value="Perempuan">Perempuan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {editingProfile.education_level === "SMA/Sederajat" ? (
+              <div className="space-y-2">
+                <Label htmlFor="kelas">Kelas</Label>
+                <Select value={editingProfile.kelas || ""} onValueChange={(value) => handleProfileInputChange("kelas", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih kelas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="11">11</SelectItem>
+                    <SelectItem value="12">12</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="semester">Semester</Label>
+                <Input
+                  id="semester"
+                  type="number"
+                  value={editingProfile.semester || ""}
+                  onChange={e => handleProfileInputChange("semester", Number(e.target.value))}
+                />
+              </div>
+            )}
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="alamat">Alamat Domisili</Label>
+              <Textarea
+                id="alamat"
+                value={editingProfile.alamat || ""}
+                onChange={(e) => handleProfileInputChange("alamat", e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    <DialogFooter>
+      <Button variant="outline" onClick={() => setShowEditProfileDialog(false)}>
+        Batal
+      </Button>
+      <Button onClick={handleSaveProfile} disabled={isSavingProfile}>
+        <Save className="mr-2 h-4 w-4" />
+        {isSavingProfile ? "Menyimpan..." : "Simpan Perubahan"}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
     </ErrorBoundary>
   )
 }
