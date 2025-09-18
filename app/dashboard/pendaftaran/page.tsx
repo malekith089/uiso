@@ -1053,7 +1053,7 @@ const openSubjectSelection = (registration: Registration) => {
                             <button 
                               type="button"
                               onClick={() => {
-                                const twibbonUrl = 'https://drive.google.com/file/d/18LHw2FBslJKG26qye6SM0fe9WcdmnYe7/view?usp=drive_link'
+                                const twibbonUrl = 'https://bingkai.in/uiso2025'
                                 const link = document.createElement('a')
                                 link.href = twibbonUrl
                                 link.download = 'Twibbon-UISO-2025.png'

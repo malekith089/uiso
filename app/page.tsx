@@ -13,6 +13,42 @@ export default function UisoLandingPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+
+        {/* Promo Banner */}
+<div className="fixed top-[64px] left-0 w-full bg-pink-600 text-white z-40 shadow-md">
+  <a
+    href="https://web.analitica.id/explore/%23p2025.uiso"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center justify-center gap-2 px-4 py-3 flex-wrap text-center"
+  >
+    <span className="font-semibold text-base md:text-lg">
+      Tryout TKA SMA UISO
+    </span>
+
+    {/* Logo Analitica */}
+    <img
+      src="images/logo-analitica.svg"
+      alt="Analitica Logo"
+      className="h-6 w-auto bg-white rounded p-1"
+    />
+
+    <span className="font-semibold text-base md:text-lg">x</span>
+
+    {/* Logo TamanSchool */}
+    <img
+      src="images/tamanschool.png"
+      alt="TamanSchool Logo"
+      className="h-6 w-auto bg-white rounded p-1"
+    />
+
+    <span className="font-semibold text-base md:text-lg">
+      – Klik di sini!
+    </span>
+  </a>
+</div>
+
+
       <main>
         <CountdownSection />
         <AboutSection />
