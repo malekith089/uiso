@@ -1,4 +1,4 @@
-import { SiTiktok, SiInstagram } from "react-icons/si";
+import { SiTiktok, SiInstagram, SiLinkedin, SiX } from "react-icons/si";
 import { Mail, Phone, MapPin } from "lucide-react"
 import Image from "next/image"
 
@@ -35,6 +35,18 @@ export function Footer() {
                 className="w-10 h-10 bg-gradient-to-br from-accent to-accent-light rounded-full flex items-center justify-center hover:from-accent-light hover:to-accent transition-all duration-300 shadow-lg"
               >
                 <SiTiktok className="w-5 h-5 text-primary" />
+              </a>
+              <a
+                href="https://linkedin.com/company/ui-science-olympiad"
+                className="w-10 h-10 bg-gradient-to-br from-accent to-accent-light rounded-full flex items-center justify-center hover:from-accent-light hover:to-accent transition-all duration-300 shadow-lg"
+              >
+                <SiLinkedin className="w-5 h-5 text-primary" />
+              </a>
+              <a
+                href="https://x.com/uiso2025"
+                className="w-10 h-10 bg-gradient-to-br from-accent to-accent-light rounded-full flex items-center justify-center hover:from-accent-light hover:to-accent transition-all duration-300 shadow-lg"
+              >
+                <SiX className="w-5 h-5 text-primary" />
               </a>
             </div>
           </div>

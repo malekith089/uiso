@@ -28,6 +28,7 @@ export function Navbar() {
     { name: "Timeline", href: "#timeline" },
     // { name: "Testimoni", href: "#testimoni" },
     // { name: "Partner", href: "#partner" },
+    { name: "TO TKA", href: "https://web.analitica.id/explore/%23p2025.uiso", external:true },
   ]
 
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -62,18 +63,28 @@ export function Navbar() {
             </span>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={(e) => handleScroll(e, item.href)}
-                className="text-gray-700 hover:text-primary font-medium transition-colors relative group"
-              >
-                {item.name}
-              </Link>
-            ))}
-          </nav>
+          {navItems.map((item) =>
+    item.external ? (
+      <a
+        key={item.name}
+        href={item.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-gray-700 hover:text-primary font-medium transition-colors relative group"
+      >
+        {item.name}
+      </a>
+    ) : (
+      <Link
+        key={item.name}
+        href={item.href}
+        onClick={(e) => handleScroll(e, item.href)}
+        className="text-gray-700 hover:text-primary font-medium transition-colors relative group"
+      >
+        {item.name}
+      </Link>
+    )
+  )}
 
           <div className="hidden lg:flex items-center gap-3">
             <Link href="/login">

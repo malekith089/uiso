@@ -26,17 +26,17 @@ export function TimelineSection() {
       description: "Pembukaan pengumpulan karya untuk Study Case Competition dan Esai Gagasan Kritis.",
     },
     {
-      date: "2 November 2025",
-      title: "Babak Penyisihan",
-      description: "Pelaksanaan Babak Penyisihan Olimpiade Sains Pelajar.",
-    },
-    {
       date: "3 November 2025",
       title: "Close Submission",
       description: "Penutupan pengumpulan karya untuk Study Case Competition dan Esai Gagasan Kritis.",
     },
     {
-      date: "10 November 2025",
+      date: "9 November 2025",
+      title: "Babak Penyisihan",
+      description: "Pelaksanaan Babak Penyisihan Olimpiade Sains Pelajar.",
+    },
+    {
+      date: "15 November 2025",
       title: "Pengumuman Peserta Lolos",
       description:
         "Pengumuman peserta yang lolos seleksi Olimpiade Sains Pelajar, Study Case Competition, dan Esai Gagasan Kritis.",
