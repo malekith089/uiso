@@ -634,25 +634,12 @@ const openSubjectSelection = (registration: Registration) => {
                         <div>
                             <CardTitle className="text-yellow-900">Pendaftaran Ditutup</CardTitle>
                             <CardDescription className="text-yellow-800">
-                                Mohon maaf, periode pendaftaran early bird untuk semua kompetisi telah berakhir.
+                                Mohon maaf, periode pendaftaran Batch 1 untuk semua kompetisi telah berakhir.
                             </CardDescription>
                         </div>
                     </CardHeader>
                 </Card>
-                  ) : (
-    // --- KODE TAMBAHAN DIMULAI DI SINI ---
-    <Card className="bg-blue-50 border-blue-200">
-      <CardHeader className="flex flex-row items-center gap-4">
-        <Info className="h-6 w-6 text-blue-600" />
-        <div>
-          <CardTitle className="text-blue-900">Pendaftaran Kuota Terbatas Dibuka!</CardTitle>
-          <CardDescription className="text-blue-800">
-            Pendaftaran hari ini dibuka dengan kuota terbatas. Segera daftar sebelum kuota terpenuhi!
-          </CardDescription>
-        </div>
-      </CardHeader>
-    </Card>
-            )}
+                  ) : ( null )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCompetitions.map((competition) => {
                 const IconComponent = getCompetitionIcon(competition.code)
