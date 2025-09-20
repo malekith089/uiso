@@ -26,17 +26,17 @@ export function TimelineSection() {
       description: "Pembukaan pengumpulan karya untuk Study Case Competition dan Esai Gagasan Kritis.",
     },
     {
-      date: "2 November 2025",
-      title: "Babak Penyisihan",
-      description: "Pelaksanaan Babak Penyisihan Olimpiade Sains Pelajar.",
-    },
-    {
       date: "3 November 2025",
       title: "Close Submission",
       description: "Penutupan pengumpulan karya untuk Study Case Competition dan Esai Gagasan Kritis.",
     },
     {
-      date: "10 November 2025",
+      date: "9 November 2025",
+      title: "Babak Penyisihan",
+      description: "Pelaksanaan Babak Penyisihan Olimpiade Sains Pelajar.",
+    },
+    {
+      date: "15 November 2025",
       title: "Pengumuman Peserta Lolos",
       description:
         "Pengumuman peserta yang lolos seleksi Olimpiade Sains Pelajar, Study Case Competition, dan Esai Gagasan Kritis.",
@@ -69,10 +69,10 @@ export function TimelineSection() {
   ]
 
   return (
-    <section id="timeline" className="py-20 bg-white">
+    <section id="timeline" className="py-20 bg-gradient-to-b from-accent/5 to-primary-dark/20">
       <div className="max-w-4xl mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-6 font-heading tracking-heading leading-normal">
             Timeline Acara
           </h2>
           <p className="text-lg text-gray-600">

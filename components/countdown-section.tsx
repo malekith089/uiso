@@ -50,9 +50,6 @@ export function CountdownSection() {
         {/* Loading content */}
         <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6">
-            <span className="bg-gradient-to-r from-accent to-warning bg-clip-text text-transparent">
-              UISO 2025
-            </span>
             <br />
             <span className="text-white">
               Countdown to Close Registration Batch 1
@@ -93,9 +90,6 @@ export function CountdownSection() {
       {/* Content */}
       <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6">
-          <span className="bg-gradient-to-r from-accent to-warning bg-clip-text text-transparent [text-stroke:5px_rgba(0,0,0,0.6)]">
-            UISO 2025
-          </span>
           <br />
           <span className="text-white [text-shadow:0_4px_8px_rgba(0,0,0,0.5)]">
             Countdown to Close Registration Batch 1

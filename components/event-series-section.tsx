@@ -34,10 +34,10 @@ export function EventSeriesSection() {
   ]
 
   return (
-    <section id="rangkaian-acara" className="py-20 bg-white">
+    <section id="rangkaian-acara" className="py-20 bg-accent/5">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-6 font-heading tracking-heading leading-normal py-1">
             Rangkaian Acara UISO
           </h2>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">

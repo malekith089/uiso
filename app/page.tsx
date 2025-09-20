@@ -13,7 +13,7 @@ export default function UisoLandingPage() {
   const [showBanner, setShowBanner] = useState(true)
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Navbar />
 
       {showBanner && (

@@ -83,8 +83,8 @@ export default function LoginPage() {
               height={48}
               className="w-12 h-12 object-contain"
             />
-            <span className="bg-gradient-to-r from-white to-gray-100 bg-clip-text text-transparent font-bold text-2xl drop-shadow-lg">
-              UISO 2025
+            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent font-bold text-3xl font-logo leading-normal py-1">
+              UISO
             </span>
           </div>
           <h1 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">Masuk ke Akun Anda</h1>

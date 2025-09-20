@@ -1,10 +1,10 @@
-import { SiTiktok, SiInstagram } from "react-icons/si";
+import { SiTiktok, SiInstagram, SiLinkedin, SiX } from "react-icons/si";
 import { Mail, Phone, MapPin } from "lucide-react"
 import Image from "next/image"
 
 export function Footer() {
   return (
-    <footer className="bg-gradient-to-br from-primary to-primary-dark text-white">
+    <footer className="bg-primary-dark text-white">
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Logo and Description */}
@@ -17,7 +17,7 @@ export function Footer() {
                 height={48}
                 className="w-12 h-12 object-contain"
               />
-              <span className="text-white font-bold text-2xl">UISO 2025</span>
+              <span className="bg-white bg-clip-text text-transparent font-bold text-2xl font-logo leading-normal py-1">UISO</span>
             </div>
             <p className="text-gray-300 mb-6 leading-relaxed">
               UI Science Olympiad adalah kompetisi sains tingkat nasional yang diselenggarakan oleh Universitas
@@ -35,6 +35,18 @@ export function Footer() {
                 className="w-10 h-10 bg-gradient-to-br from-accent to-accent-light rounded-full flex items-center justify-center hover:from-accent-light hover:to-accent transition-all duration-300 shadow-lg"
               >
                 <SiTiktok className="w-5 h-5 text-primary" />
+              </a>
+              <a
+                href="https://linkedin.com/company/ui-science-olympiad"
+                className="w-10 h-10 bg-gradient-to-br from-accent to-accent-light rounded-full flex items-center justify-center hover:from-accent-light hover:to-accent transition-all duration-300 shadow-lg"
+              >
+                <SiLinkedin className="w-5 h-5 text-primary" />
+              </a>
+              <a
+                href="https://x.com/uiso2025"
+                className="w-10 h-10 bg-gradient-to-br from-accent to-accent-light rounded-full flex items-center justify-center hover:from-accent-light hover:to-accent transition-all duration-300 shadow-lg"
+              >
+                <SiX className="w-5 h-5 text-primary" />
               </a>
             </div>
           </div>
