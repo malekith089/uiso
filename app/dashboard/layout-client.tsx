@@ -18,7 +18,12 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const sidebarItems = [
   {
@@ -32,9 +37,9 @@ const sidebarItems = [
     icon: FileText,
   },
   // {
-  //   title: "Submisi",
-  //   href: "/dashboard/submisi",
-  //   icon: Upload,
+  //   title: "Submisi",
+  //   href: "/dashboard/submisi",
+  //   icon: Upload,
   // },
 ]
 
@@ -44,73 +49,110 @@ interface DashboardLayoutClientProps {
   profile: any
 }
 
-export default function DashboardLayoutClient({ children, user, profile }: DashboardLayoutClientProps) {
+export default function DashboardLayoutClient({
+  children,
+  user,
+  profile,
+}: DashboardLayoutClientProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
-  
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push("/login")
   }
 
+  const [isProfileComplete, setIsProfileComplete] = useState(false)
+  useEffect(() => {
+    const checkProfileCompleteness = () => {
+      if (!profile) {
+        setIsProfileComplete(false)
+        return
+      }
+      const requiredFields = [
+        "full_name",
+        "school_institution",
+        "identity_number",
+        "phone",
+        "tempat_lahir",
+        "tanggal_lahir",
+        "jenis_kelamin",
+        "alamat",
+      ]
+      const isComplete = requiredFields.every(field => profile[field])
+      setIsProfileComplete(isComplete)
+    }
+
+    checkProfileCompleteness()
+  }, [profile])
+
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
-      {/* Logo */}
-      <div className="flex h-16 items-center border-b px-6">
-        <div className="flex items-center gap-3">
-          <Image
-            src="/images/uiso-logo.png"
-            alt="UISO 2025 Logo"
-            width={32}
-            height={32}
-            className="w-8 h-8 object-contain"
-          />
-          <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent font-bold text-lg">
-            UISO 2025
-          </span>
+      {/* --- PERBAIKAN DI SINI --- */}
+      <Link href="/" className="hover:bg-gray-50 transition-colors">
+        <div className="flex h-16 items-center border-b px-6">
+          <div className="flex items-center gap-3">
+            <Image
+              src="/images/uiso-logo-circular.png"
+              alt="UISO 2025 Logo"
+              width={32}
+              height={32}
+              className="w-8 h-8 object-contain"
+            />
+            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent font-bold text-lg font-logo">
+              UISO
+            </span>
+          </div>
         </div>
-      </div>
+      </Link>
+      {/* ------------------------- */}
 
       {/* Navigation */}
       <nav className="flex-1 space-y-2 p-4">
-  <TooltipProvider delayDuration={100}>
-    {sidebarItems.map((item) => {
-      const isActive = pathname === item.href
-      const isRegistrationLink = item.href === "/dashboard/pendaftaran"
-      const isDisabled = isRegistrationLink && !isProfileComplete
+        <TooltipProvider delayDuration={100}>
+          {sidebarItems.map(item => {
+            const isActive = pathname === item.href
+            const isRegistrationLink = item.href === "/dashboard/pendaftaran"
+            const isDisabled = isRegistrationLink && !isProfileComplete
 
-      const linkClasses = `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-        isActive ? "bg-primary text-primary-foreground" : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-      } ${isDisabled ? "cursor-not-allowed opacity-50" : ""}`
+            const linkClasses = `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              isActive
+                ? "bg-primary text-primary-foreground"
+                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+            } ${isDisabled ? "cursor-not-allowed opacity-50" : ""}`
 
-      if (isDisabled) {
-        return (
-          <Tooltip key={item.href}>
-            <TooltipTrigger asChild>
-              <div className={linkClasses}>
+            if (isDisabled) {
+              return (
+                <Tooltip key={item.href}>
+                  <TooltipTrigger asChild>
+                    <div className={linkClasses}>
+                      <item.icon className="h-4 w-4" />
+                      {item.title}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>Lengkapi profil Anda untuk membuka menu ini.</p>
+                  </TooltipContent>
+                </Tooltip>
+              )
+            }
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={linkClasses}
+                onClick={() => setSidebarOpen(false)}
+              >
                 <item.icon className="h-4 w-4" />
                 {item.title}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Lengkapi profil Anda untuk membuka menu ini.</p>
-            </TooltipContent>
-          </Tooltip>
-        )
-      }
-
-      return (
-        <Link key={item.href} href={item.href} className={linkClasses} onClick={() => setSidebarOpen(false)}>
-          <item.icon className="h-4 w-4" />
-          {item.title}
-        </Link>
-      )
-    })}
-  </TooltipProvider>
-</nav>
+              </Link>
+            )
+          })}
+        </TooltipProvider>
+      </nav>
 
       {/* User Section */}
       <div className="border-t p-4">
@@ -125,37 +167,15 @@ export default function DashboardLayoutClient({ children, user, profile }: Dashb
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-gray-900 truncate">{profile?.full_name || "User"}</p>
+            <p className="font-medium text-gray-900 truncate">
+              {profile?.full_name || "User"}
+            </p>
             <p className="text-gray-500 truncate">{user?.email}</p>
           </div>
         </div>
       </div>
     </div>
   )
-
-  const [isProfileComplete, setIsProfileComplete] = useState(false)
-    useEffect(() => {
-    const checkProfileCompleteness = () => {
-        if (!profile) {
-            setIsProfileComplete(false)
-            return
-        }
-        const requiredFields = [
-            "full_name",
-            "school_institution",
-            "identity_number",
-            "phone",
-            "tempat_lahir",
-            "tanggal_lahir",
-            "jenis_kelamin",
-            "alamat",
-        ]
-        const isComplete = requiredFields.every((field) => profile[field])
-        setIsProfileComplete(isComplete)
-    }
-
-    checkProfileCompleteness()
-  }, [profile])
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -189,7 +209,8 @@ export default function DashboardLayoutClient({ children, user, profile }: Dashb
               </SheetContent>
             </Sheet>
             <h1 className="text-xl font-semibold text-gray-900">
-              {sidebarItems.find((item) => item.href === pathname)?.title || "Dashboard"}
+              {sidebarItems.find(item => item.href === pathname)?.title ||
+                "Dashboard"}
             </h1>
           </div>
 
@@ -197,7 +218,10 @@ export default function DashboardLayoutClient({ children, user, profile }: Dashb
             {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Button
+                  variant="ghost"
+                  className="relative h-8 w-8 rounded-full"
+                >
                   <Avatar className="h-8 w-8">
                     <AvatarFallback>
                       {profile?.full_name
@@ -212,8 +236,12 @@ export default function DashboardLayoutClient({ children, user, profile }: Dashb
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{profile?.full_name || "User"}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                    <p className="text-sm font-medium leading-none">
+                      {profile?.full_name || "User"}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.email}
+                    </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -239,3 +267,4 @@ export default function DashboardLayoutClient({ children, user, profile }: Dashb
     </div>
   )
 }
+

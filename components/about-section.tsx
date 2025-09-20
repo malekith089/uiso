@@ -2,10 +2,10 @@ import { Award, Users, Trophy, Target } from "lucide-react"
 
 export function AboutSection() {
   return (
-    <section id="tentang" className="py-20 bg-white">
+    <section id="tentang" className="py-20 bg-gradient-to-b from-[#86CCD6]/40 to-primary/5">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-6 font-heading tracking-heading">
             Apa itu UISO?
           </h2>
           <div className="max-w-4xl mx-auto">

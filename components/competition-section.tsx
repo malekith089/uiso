@@ -45,10 +45,10 @@ export function CompetitionSection() {
   const [activeTab, setActiveTab] = useState<CompetitionKey>("OSP")
 
   return (
-    <section id="lomba" className="py-20 bg-gradient-to-br from-primary/5 via-tertiary/5 to-accent/5">
+    <section id="lomba" className="py-20 bg-gradient-to-b from-primary/5 to-accent/5">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-6 font-heading tracking-heading">
             Kompetisi Kami
           </h2>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">

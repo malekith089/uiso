@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss"
+const { fontFamily } = require("tailwindcss/defaultTheme")
 
 const config = {
   darkMode: ["class"],
@@ -19,6 +20,14 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-poppins)", ...fontFamily.sans],
+        logo: ["var(--font-adelia)", "cursive"],
+        heading: ["var(--font-soopafresh)", "sans-serif"],
+      },
+      letterSpacing: {
+        heading: "0.1em", // Menambahkan spasi antar karakter untuk judul
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -93,3 +102,4 @@ const config = {
 } satisfies Config
 
 export default config
+
