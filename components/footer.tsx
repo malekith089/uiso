@@ -17,7 +17,7 @@ export function Footer() {
                 height={48}
                 className="w-12 h-12 object-contain"
               />
-              <span className="text-white font-bold text-2xl">UISO 2025</span>
+              <span className="bg-white bg-clip-text text-transparent font-bold text-2xl font-logo leading-normal py-1">UISO</span>
             </div>
             <p className="text-gray-300 mb-6 leading-relaxed">
               UI Science Olympiad adalah kompetisi sains tingkat nasional yang diselenggarakan oleh Universitas
