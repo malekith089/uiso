@@ -71,43 +71,66 @@ export interface UnifiedRegistration {
 export default async function UnifiedManagementPage() {
   const supabase = await createClient()
 
-  // Fetch all registrations with related data (not just pending)
-  // Get comprehensive statistics
-  const today = new Date().toISOString().split("T")[0]
+  // --- OPTIMASI FINAL: Ambil semua data status dalam SATU request ---
+  const { data: registrations, error } = await supabase
+    .from("registrations")
+    .select("status, updated_at")
 
-  const [
-    { count: totalRegistrations },
-    { count: approvedCount },
-    { count: pendingCount },
-    { count: rejectedCount },
-    { count: todayApproved },
-    { count: todayRejected },
-  ] = await Promise.all([
-    supabase.from("registrations").select("id", { count: "exact", head: true }),
-    supabase.from("registrations").select("id", { count: "exact", head: true }).eq("status", "approved"),
-    supabase.from("registrations").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("registrations").select("id", { count: "exact", head: true }).eq("status", "rejected"),
-    supabase
-      .from("registrations")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "approved")
-      .gte("updated_at", today),
-    supabase
-      .from("registrations")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "rejected")
-      .gte("updated_at", today),
-  ])
+  if (error) {
+    console.error("Gagal mengambil data registrasi:", error)
+    // Fallback jika query gagal, halaman tidak akan crash
+    return (
+      <UnifiedManagementClient
+        stats={{
+          total: 0,
+          approved: 0,
+          pending: 0,
+          rejected: 0,
+          approvedToday: 0,
+          rejectedToday: 0,
+        }}
+        ospSubjects={OSP_SUBJECTS}
+      />
+    )
+  }
+
+  // --- Lakukan penghitungan di sini (super cepat) ---
+  const today = new Date().toISOString().split("T")[0]
+  let approvedCount = 0
+  let pendingCount = 0
+  let rejectedCount = 0
+  let todayApproved = 0
+  let todayRejected = 0
+
+  for (const reg of registrations) {
+    switch (reg.status) {
+      case "approved":
+        approvedCount++
+        if (reg.updated_at.startsWith(today)) {
+          todayApproved++
+        }
+        break
+      case "pending":
+        pendingCount++
+        break
+      case "rejected":
+        rejectedCount++
+        if (reg.updated_at.startsWith(today)) {
+          todayRejected++
+        }
+        break
+    }
+  }
 
   return (
     <UnifiedManagementClient
       stats={{
-        total: totalRegistrations || 0,
-        approved: approvedCount || 0,
-        pending: pendingCount || 0,
-        rejected: rejectedCount || 0,
-        approvedToday: todayApproved || 0,
-        rejectedToday: todayRejected || 0,
+        total: registrations.length,
+        approved: approvedCount,
+        pending: pendingCount,
+        rejected: rejectedCount,
+        approvedToday: todayApproved,
+        rejectedToday: todayRejected,
       }}
       ospSubjects={OSP_SUBJECTS}
     />
