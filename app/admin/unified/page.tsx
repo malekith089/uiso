@@ -65,73 +65,93 @@ export interface UnifiedRegistration {
     tanggal_lahir: string | null
     jenis_kelamin: "Laki-laki" | "Perempuan" | null
     alamat: string | null
+    identity_card_verified: boolean
   }>
 }
 
-export default async function UnifiedManagementPage() {
+// 🔥 OPTIMIZED: Get stats without unstable_cache to avoid cookie issues
+async function getOptimizedStats() {
   const supabase = await createClient()
 
-  // --- OPTIMASI FINAL: Ambil semua data status dalam SATU request ---
-  const { data: registrations, error } = await supabase
-    .from("registrations")
-    .select("status, updated_at")
+  try {
+    // Try RPC function first (most efficient)
+    const { data: rpcData, error: rpcError } = await supabase
+      .rpc('get_registration_stats')
 
-  if (error) {
-    console.error("Gagal mengambil data registrasi:", error)
-    // Fallback jika query gagal, halaman tidak akan crash
-    return (
-      <UnifiedManagementClient
-        stats={{
-          total: 0,
-          approved: 0,
-          pending: 0,
-          rejected: 0,
-          approvedToday: 0,
-          rejectedToday: 0,
-        }}
-        ospSubjects={OSP_SUBJECTS}
-      />
-    )
-  }
+    if (!rpcError && rpcData && rpcData[0]) {
+      return {
+        total: Number(rpcData[0].total),
+        approved: Number(rpcData[0].approved),
+        pending: Number(rpcData[0].pending),
+        rejected: Number(rpcData[0].rejected),
+        approvedToday: Number(rpcData[0].approved_today),
+        rejectedToday: Number(rpcData[0].rejected_today),
+      }
+    }
 
-  // --- Lakukan penghitungan di sini (super cepat) ---
-  const today = new Date().toISOString().split("T")[0]
-  let approvedCount = 0
-  let pendingCount = 0
-  let rejectedCount = 0
-  let todayApproved = 0
-  let todayRejected = 0
+    console.warn("RPC not available, using fallback query")
+    
+    // Fallback: optimized query (only get status and updated_at)
+    const { data: registrations, error } = await supabase
+      .from("registrations")
+      .select("status, updated_at")
 
-  for (const reg of registrations) {
-    switch (reg.status) {
-      case "approved":
-        approvedCount++
-        if (reg.updated_at.startsWith(today)) {
-          todayApproved++
-        }
-        break
-      case "pending":
-        pendingCount++
-        break
-      case "rejected":
-        rejectedCount++
-        if (reg.updated_at.startsWith(today)) {
-          todayRejected++
-        }
-        break
+    if (error) throw error
+
+    const today = new Date().toISOString().split("T")[0]
+    let approvedCount = 0, pendingCount = 0, rejectedCount = 0
+    let todayApproved = 0, todayRejected = 0
+
+    for (const reg of registrations) {
+      switch (reg.status) {
+        case "approved":
+          approvedCount++
+          if (reg.updated_at.startsWith(today)) {
+            todayApproved++
+          }
+          break
+        case "pending":
+          pendingCount++
+          break
+        case "rejected":
+          rejectedCount++
+          if (reg.updated_at.startsWith(today)) {
+            todayRejected++
+          }
+          break
+      }
+    }
+
+    return {
+      total: registrations.length,
+      approved: approvedCount,
+      pending: pendingCount,
+      rejected: rejectedCount,
+      approvedToday: todayApproved,
+      rejectedToday: todayRejected,
+    }
+
+  } catch (error) {
+    console.error("Error fetching stats:", error)
+    // Return zeros instead of crashing
+    return {
+      total: 0,
+      approved: 0,
+      pending: 0,
+      rejected: 0,
+      approvedToday: 0,
+      rejectedToday: 0,
     }
   }
+}
+
+export default async function UnifiedManagementPage() {
+  // 🔥 OPTIMIZED: Get stats with RPC function (still much faster than before)
+  const stats = await getOptimizedStats()
 
   return (
     <UnifiedManagementClient
-      stats={{
-        total: registrations.length,
-        approved: approvedCount,
-        pending: pendingCount,
-        rejected: rejectedCount,
-        approvedToday: todayApproved,
-        rejectedToday: todayRejected,
-      }}
+      stats={stats}
       ospSubjects={OSP_SUBJECTS}
     />
   )
