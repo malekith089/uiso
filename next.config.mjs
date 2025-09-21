@@ -11,6 +11,12 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        port: '',
+        pathname: '/**'
+      },
+      {
+        protocol: 'https',
         hostname: 'placeholder.svg', // Sesuaikan dengan hostname sumber gambar
         port: '',
         pathname: '/**',

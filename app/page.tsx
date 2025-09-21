@@ -40,7 +40,7 @@ export default function UisoLandingPage() {
 
               {/* Logo TamanSchool */}
               <img
-                src="/images/tamanschool.png"
+                src="/images/tamanschool.webp"
                 alt="TamanSchool Logo"
                 className="h-6 w-auto bg-white rounded p-1"
               />

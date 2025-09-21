@@ -82,7 +82,7 @@ export function Navbar() {
             className="flex items-center gap-3"
           >
             <Image
-              src="/images/uiso-logo-circular.png"
+              src="/images/uiso-logo.webp"
               alt="UISO 2025 Logo"
               width={40}
               height={40}

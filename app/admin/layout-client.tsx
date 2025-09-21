@@ -70,7 +70,7 @@ export default function AdminLayoutClient({ children, user, profile }: AdminLayo
       <div className="flex h-16 items-center border-b px-6">
         <div className="flex items-center gap-3">
           <Image
-            src="/images/uiso-logo.png"
+            src="/images/uiso-logo.webp"
             alt="UISO 2025 Logo"
             width={32}
             height={32}
