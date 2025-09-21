@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Trophy, BookOpen, Lightbulb, AlertTriangle, Info } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import { FileUpload } from "@/components/ui/file-upload"
+import { FileUploadOptimized as FileUpload } from "@/components/ui/file-upload-optimized"
 import { showErrorToast, showSuccessToast, withRetry } from "@/lib/error-handler"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { useRouter } from 'next/navigation';

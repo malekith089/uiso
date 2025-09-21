@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { type NextRequest, NextResponse } from "next/server"
+import { Registration } from "@/app/types/supabase"
+
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,130 +19,183 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "created_at"
     const sortOrder = searchParams.get("sortOrder") || "desc"
 
-    let query = supabase.from("registrations").select(
-  `
-    id,
-    status,
-    team_name,
-    identity_card_url,
-    engagement_proof_url,
-    payment_proof_url,
-    created_at,
-    updated_at,
-    selected_subject_id,
-    identity_card_verified,
-    engagement_proof_verified,
-    payment_proof_verified,
-    verified_by,
-    verified_at,
-    profiles!user_id ( *
-    ),
-    competitions!competition_id (
-      name,
-      code,
-      participant_type
-    ),
-    team_members ( *
-    )
-  `,
-  { count: "exact" },
-)
+    console.log("[API] Query params:", { 
+      page, limit, search, status, competition, education, 
+      sortBy, sortOrder, dateFrom, dateTo 
+    })
 
+    console.log("[API] Will sort by:", sortBy, "in order:", sortOrder)
+
+    // 🔥 FIXED: Gunakan query yang benar dengan alias relasi
+    let query = supabase
+      .from("registrations")
+      .select(
+        `
+        id,
+        status,
+        team_name,
+        identity_card_url,
+        engagement_proof_url,
+        payment_proof_url,
+        created_at,
+        updated_at,
+        selected_subject_id,
+        identity_card_verified,
+        engagement_proof_verified,
+        payment_proof_verified,
+        verified_by,
+        verified_at,
+        profiles!registrations_user_id_fkey (
+          id,
+          full_name,
+          email,
+          school_institution,
+          education_level,
+          identity_number,
+          phone,
+          kelas,
+          semester,
+          tempat_lahir,
+          tanggal_lahir,
+          jenis_kelamin,
+          alamat,
+          created_at
+        ),
+        competitions!registrations_competition_id_fkey (
+          name,
+          code,
+          participant_type
+        ),
+        team_members (
+          id,
+          full_name,
+          identity_number,
+          identity_card_url,
+          email,
+          phone,
+          school_institution,
+          education_level,
+          kelas,
+          semester,
+          tempat_lahir,
+          tanggal_lahir,
+          jenis_kelamin,
+          alamat,
+          identity_card_verified,
+          member_order
+        )
+        `,
+        { count: "exact" }
+      )
+
+    // 🔥 FILTERS: Apply filters properly
     if (status !== "all") {
       query = query.eq("status", status)
     }
-    // Filter kompetisi - gunakan foreign key reference yang benar
-    if (competition !== "all") {
-      query = query.eq("competitions.code", competition)
-    }
 
-    // Filter education level - gunakan foreign key reference yang benar  
-    if (education !== "all") {
-      query = query.eq("profiles.education_level", education)
-    }
     if (dateFrom) {
       query = query.gte("created_at", dateFrom)
     }
     if (dateTo) {
       query = query.lte("created_at", dateTo + "T23:59:59.999Z")
     }
-    // Search akan dihandle secara manual setelah data diambil
-    let searchTerm = null
-    if (search) {
-      searchTerm = search.trim().toLowerCase()
+
+    // 🔥 SORTING: Apply sorting WITHOUT foreignTable - let JS handle complex sorts
+    // Only sort by registration table fields in database
+    if (sortBy === "created_at" || sortBy === "updated_at" || sortBy === "status") {
+      query = query.order(sortBy, { ascending: sortOrder === "asc" })
+    } else {
+      // For foreign table sorts, use default order and sort in JS later
+      query = query.order("created_at", { ascending: false })
     }
 
-    const { data: allRegistrations, error, count } = await query
-
-    let filteredRegistrations = allRegistrations || []
-
-// Manual search filtering
-if (searchTerm && filteredRegistrations.length > 0) {
-  filteredRegistrations = filteredRegistrations.filter((reg: any) => {
-    const profile = Array.isArray(reg.profiles) ? reg.profiles[0] : reg.profiles
-    if (!profile) return false
-    
-    const searchableText = [
-      profile.full_name || '',
-      profile.email || '',
-      profile.school_institution || '',
-      profile.identity_number || ''
-    ].join(' ').toLowerCase()
-    
-    return searchableText.includes(searchTerm)
-  })
-}
-
-// Manual filter untuk kompetisi dan education (backup jika database filter gagal)
-if (competition !== "all") {
-  filteredRegistrations = filteredRegistrations.filter((reg: any) => {
-    const comp = Array.isArray(reg.competitions) ? reg.competitions[0] : reg.competitions
-    return comp?.code === competition
-  })
-}
-
-if (education !== "all") {
-  filteredRegistrations = filteredRegistrations.filter((reg: any) => {
-    const profile = Array.isArray(reg.profiles) ? reg.profiles[0] : reg.profiles
-    return profile?.education_level === education
-  })
-}
+    console.log("[API] Executing database query...")
+    const { data: allRegistrations, error, count } = await query.returns<Registration[]>()
 
     if (error) {
-      console.error("Error fetching registrations:", error)
+      console.error("Database error:", error)
       return NextResponse.json({ error: "Failed to fetch registrations" }, { status: 500 })
     }
 
-    let sortedRegistrations = filteredRegistrations
-    
-    if (sortedRegistrations.length > 1) {
-      sortedRegistrations = sortedRegistrations.sort((a: any, b: any) => {
-        const getProfile = (item: any) => (Array.isArray(item.profiles) ? item.profiles[0] : item.profiles)
-        const getCompetition = (item: any) => (Array.isArray(item.competitions) ? item.competitions[0] : item.competitions)
+    console.log(`[API] Database returned ${allRegistrations?.length || 0} registrations`)
+
+    // Debug: Log first registration structure
+    if (allRegistrations && allRegistrations.length > 0) {
+      const first = allRegistrations[0]
+      console.log("[API] Sample registration structure:", {
+        profiles: !!first.profiles,
+        profileName: first.profiles?.full_name,
+        competitions: !!first.competitions,
+        competitionCode: first.competitions?.code,
+        competitionName: first.competitions?.name
+      })
+    }
+
+    let filteredRegistrations = allRegistrations || []
+
+    // 🔥 POST-QUERY FILTERS: Apply complex filters after DB query
+    if (search) {
+      const searchTerm = search.trim().toLowerCase()
+      filteredRegistrations = filteredRegistrations.filter((reg: any) => {
+        const profile = reg.profiles
+        if (!profile) return false
         
+        const searchableText = [
+          profile.full_name || '',
+          profile.email || '',
+          profile.school_institution || '',
+          profile.identity_number || ''
+        ].join(' ').toLowerCase()
+        
+        return searchableText.includes(searchTerm)
+      })
+    }
+
+    if (competition !== "all") {
+      filteredRegistrations = filteredRegistrations.filter((reg: any) => {
+        return reg.competitions?.code === competition
+      })
+    }
+
+    if (education !== "all") {
+      filteredRegistrations = filteredRegistrations.filter((reg: any) => {
+        return reg.profiles?.education_level === education
+      })
+    }
+
+    // 🔥 JAVASCRIPT SORTING: Handle complex sorting after database query
+    if (filteredRegistrations.length > 1) {
+      filteredRegistrations = filteredRegistrations.sort((a: any, b: any) => {
         let valueA: any = ""
         let valueB: any = ""
 
+        // Get values based on sortBy
         switch (sortBy) {
           case "profiles.full_name":
-            valueA = getProfile(a)?.full_name?.toLowerCase() || ""
-            valueB = getProfile(b)?.full_name?.toLowerCase() || ""
+            valueA = a.profiles?.full_name?.toLowerCase() || ""
+            valueB = b.profiles?.full_name?.toLowerCase() || ""
             break
           case "profiles.education_level":
-            valueA = getProfile(a)?.education_level || ""
-            valueB = getProfile(b)?.education_level || ""
+            valueA = a.profiles?.education_level || ""
+            valueB = b.profiles?.education_level || ""
             break
           case "competitions.code":
-            valueA = getCompetition(a)?.code || ""
-            valueB = getCompetition(b)?.code || ""
+            valueA = a.competitions?.code || ""
+            valueB = b.competitions?.code || ""
+            break
+          case "competitions.name":
+            valueA = a.competitions?.name || ""
+            valueB = b.competitions?.name || ""
             break
           case "created_at":
+          case "updated_at":
           default:
-            valueA = new Date(a.created_at || 0).getTime()
-            valueB = new Date(b.created_at || 0).getTime()
+            valueA = new Date(a[sortBy] || a.created_at || 0).getTime()
+            valueB = new Date(b[sortBy] || b.created_at || 0).getTime()
             break
         }
         
+        // Compare values
         let comparison = 0
         if (typeof valueA === "string" && typeof valueB === "string") {
           comparison = valueA.localeCompare(valueB)
@@ -148,44 +203,47 @@ if (education !== "all") {
           comparison = valueA < valueB ? -1 : valueA > valueB ? 1 : 0
         }
         
+        // Apply sort order
         return sortOrder === "asc" ? comparison : -comparison
       })
     }
 
-    // ========================================================================
-    // PERBAIKAN DI SINI: Normalisasi struktur data sebelum mengirim ke client
-    // ========================================================================
-    const normalizedRegistrations = sortedRegistrations.map((reg: any) => ({
-      ...reg,
-      profiles: Array.isArray(reg.profiles) ? reg.profiles[0] : reg.profiles,
-      competitions: Array.isArray(reg.competitions) ? reg.competitions[0] : reg.competitions,
-    }));
+    console.log(`[API] Applied JS sorting: ${sortBy} ${sortOrder}`)
+    
+    // Debug: Log first few sorted results
+    if (filteredRegistrations.length > 0) {
+      const first3 = filteredRegistrations.slice(0, 3).map((reg: any) => ({
+        name: reg.profiles?.full_name,
+        competition: reg.competitions?.code,
+        education: reg.profiles?.education_level
+      }))
+      console.log("[API] First 3 after sorting:", first3)
+    }
 
+    // 🔥 PAGINATION: Apply after all filters and sorting
+    const totalFiltered = filteredRegistrations.length
     const from = (page - 1) * limit
     const to = from + limit
-    // Gunakan data yang sudah dinormalisasi untuk paginasi
-    const paginatedRegistrations = normalizedRegistrations.slice(from, to)
+    const paginatedRegistrations = filteredRegistrations.slice(from, to)
 
-    // Update count berdasarkan filtered data
-    const finalCount = searchTerm || competition !== "all" || education !== "all" 
-      ? filteredRegistrations.length 
-      : count || 0
+    const totalPages = Math.ceil(totalFiltered / limit)
 
-    const totalPages = Math.ceil(finalCount / limit)
+    console.log(`[API] Returning ${paginatedRegistrations.length} registrations (page ${page}/${totalPages})`)
 
     const response = NextResponse.json({
       data: paginatedRegistrations,
       pagination: {
         page,
         limit,
-        total: finalCount,
+        total: totalFiltered,
         totalPages,
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1,
       },
     })
 
-    response.headers.set("Cache-Control", "public, s-maxage=30, stale-while-revalidate=60")
+    // Short cache for quick navigation
+    response.headers.set("Cache-Control", "public, s-maxage=10, stale-while-revalidate=30")
     return response
 
   } catch (error) {
