@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: "UISO 2025",
   description: "UI Science Olympiad 2025",
   icons: {
-    icon: "/images/uiso-logo.png",
+    icon: "/images/uiso-logo.webp",
   },
 }
 
