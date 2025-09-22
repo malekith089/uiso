@@ -1,25 +1,56 @@
 // app/layout.tsx
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
-import { QueryProvider } from '@/lib/providers/query-provider'
-import { Toaster } from '@/components/ui/toaster'
-
-const inter = Inter({ subsets: ['latin'] })
+import type React from "react"
+import type { Metadata } from "next"
+import { Poppins } from "next/font/google" // Mengganti GeistSans dengan Poppins
+import localFont from "next/font/local"   // Untuk memuat font dari file lokal
+import { cn } from "@/lib/utils"           // Import cn utility untuk menggabungkan class
+import "./globals.css"
+import { Toaster } from "@/components/ui/toaster"
+import { QueryProvider } from "@/lib/providers/query-provider"
 
 export const metadata: Metadata = {
-  title: 'UISO 2025',
-  description: 'UI Science Olympiad 2025',
+  title: "UISO 2025",
+  description: "UI Science Olympiad 2025",
+  icons: {
+    icon: "/images/uiso-logo.webp",
+  },
 }
+
+// 1. Konfigurasi font Poppins untuk body
+const fontPoppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"], // Sesuaikan weight yang dibutuhkan
+  variable: "--font-poppins",
+})
+
+// 2. Konfigurasi font Adelia untuk logo
+const fontAdelia = localFont({
+  src: "/fonts/ADELIA.otf", // Pastikan path dan nama file benar
+  display: "swap",
+  variable: "--font-adelia",
+})
+
+// 3. Konfigurasi font Soopafresh untuk heading
+const fontSoopafresh = localFont({
+  src: "/fonts/soopafre.ttf", // Pastikan path dan nama file benar
+  display: "swap",
+  variable: "--font-soopafresh",
+})
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
-    <html lang="id" suppressHydrationWarning>
-      <body className={inter.className}>
+    // Gabungkan semua variabel font ke dalam tag <html>
+    <html lang="en" className={cn(
+        fontPoppins.variable, 
+        fontAdelia.variable, 
+        fontSoopafresh.variable
+      )}
+    >
+      <body>
         <QueryProvider>
           {children}
           <Toaster />

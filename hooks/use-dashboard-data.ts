@@ -1,15 +1,34 @@
 // hooks/use-dashboard-data.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
+import { useMemo } from 'react'
 
-// Hook untuk fetch user profile dengan caching
-export function useUserProfile() {
+export function useCurrentUser() {
   const supabase = createClient()
   
   return useQuery({
-    queryKey: ['userProfile'],
+    queryKey: ['currentUser'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error) throw error
+      if (!user) throw new Error('User not found')
+      return user
+    },
+    staleTime: 10 * 60 * 1000, // User data stale lebih lama (10 menit)
+    gcTime: 30 * 60 * 1000,    // Keep longer in cache
+  })
+}
+
+// Hook untuk fetch user profile dengan caching
+// Ganti function useUserProfile yang lama dengan ini:
+
+export function useUserProfile() {
+  const supabase = createClient()
+  const { data: user } = useCurrentUser()
+  
+  return useQuery({
+    queryKey: ['userProfile', user?.id],
+    queryFn: async () => {
       if (!user) throw new Error('User not found')
       
       const { data: profile, error } = await supabase
@@ -21,19 +40,22 @@ export function useUserProfile() {
       if (error) throw error
       return profile
     },
-    staleTime: 5 * 60 * 1000, // Data dianggap fresh selama 5 menit
-    gcTime: 10 * 60 * 1000,   // Cache disimpan selama 10 menit
+    enabled: !!user, // Only run when user is available
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   })
 }
 
 // Hook untuk fetch registrations dengan caching
+// Ganti function useRegistrations yang lama dengan ini:
+
 export function useRegistrations() {
   const supabase = createClient()
+  const { data: user } = useCurrentUser()
   
   return useQuery({
-    queryKey: ['registrations'],
+    queryKey: ['registrations', user?.id],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not found')
       
       const { data, error } = await supabase
@@ -45,7 +67,8 @@ export function useRegistrations() {
       if (error) throw error
       return data || []
     },
-    staleTime: 3 * 60 * 1000, // Data dianggap fresh selama 3 menit
+    enabled: !!user, // Only run when user is available
+    staleTime: 3 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   })
 }
@@ -71,13 +94,15 @@ export function useCompetitions() {
 }
 
 // Hook untuk update profile dengan optimistic update
+// Ganti function useUpdateProfile yang lama dengan ini:
+
 export function useUpdateProfile() {
   const queryClient = useQueryClient()
   const supabase = createClient()
+  const { data: user } = useCurrentUser()
   
   return useMutation({
     mutationFn: async (profileData: any) => {
-      const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not found')
       
       const { data, error } = await supabase
@@ -91,10 +116,10 @@ export function useUpdateProfile() {
       return data
     },
     onSuccess: (data) => {
-      // Update cache immediately
-      queryClient.setQueryData(['userProfile'], data)
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ['registrations'] })
+      // Update cache immediately with user ID
+      queryClient.setQueryData(['userProfile', user?.id], data)
+      // Invalidate related queries with user ID
+      queryClient.invalidateQueries({ queryKey: ['registrations', user?.id] })
     },
   })
 }
@@ -103,20 +128,20 @@ export function useUpdateProfile() {
 export function useProfileCompleteness() {
   const { data: profile } = useUserProfile()
   
-  const requiredFields = [
+  const requiredFields = useMemo(() => [
     'full_name',
-    'school_institution',
+    'school_institution', 
     'identity_number',
     'phone',
     'tempat_lahir',
     'tanggal_lahir',
     'jenis_kelamin',
     'alamat',
-  ]
+  ], [])
   
-  const isComplete = profile
-    ? requiredFields.every(field => profile[field])
-    : false
+  const isComplete = useMemo(() => {
+    return profile ? requiredFields.every(field => profile[field]) : false
+  }, [profile, requiredFields])
   
   return { isComplete, profile }
 }
