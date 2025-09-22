@@ -1,3 +1,4 @@
+// app/layout.tsx
 import type React from "react"
 import type { Metadata } from "next"
 import { Poppins } from "next/font/google" // Mengganti GeistSans dengan Poppins
@@ -5,12 +6,13 @@ import localFont from "next/font/local"   // Untuk memuat font dari file lokal
 import { cn } from "@/lib/utils"           // Import cn utility untuk menggabungkan class
 import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
+import { QueryProvider } from "@/lib/providers/query-provider"
 
 export const metadata: Metadata = {
   title: "UISO 2025",
   description: "UI Science Olympiad 2025",
   icons: {
-    icon: "/images/uiso-logo.png",
+    icon: "/images/uiso-logo.webp",
   },
 }
 
@@ -41,17 +43,18 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    // Gabungkan semua variabel font ke dalam tag <html> atau <body>
+    // Gabungkan semua variabel font ke dalam tag <html>
     <html lang="en" className={cn(
         fontPoppins.variable, 
         fontAdelia.variable, 
         fontSoopafresh.variable
       )}
     >
-      {/* Hapus <head> dan <style> dari sini, karena `next/font` menanganinya */}
       <body>
-        {children}
-        <Toaster />
+        <QueryProvider>
+          {children}
+          <Toaster />
+        </QueryProvider>
       </body>
     </html>
   )
