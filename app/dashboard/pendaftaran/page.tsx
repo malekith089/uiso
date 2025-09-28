@@ -680,19 +680,30 @@ const openSubjectSelection = (registration: Registration) => {
                         </div>
                       </div>
 
-                      <Button
-                        className="w-full"
-                        disabled={disabled}
-                        onClick={() => handleRegisterCompetition(competition)}
-                      >
-                        {isRegistrationClosed 
-                            ? "Pendaftaran Ditutup" 
-                            : isRegistered
-                          ? "Sudah Terdaftar"
-                          : hasActiveRegistration
-                          ? "Sudah Mendaftar Lomba Lain"
-                          : "Daftar"}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          className="flex-1"
+                          disabled={disabled}
+                          onClick={() => handleRegisterCompetition(competition)}
+                        >
+                          {isRegistrationClosed 
+                              ? "Pendaftaran Ditutup" 
+                              : isRegistered
+                            ? "Sudah Terdaftar"
+                            : hasActiveRegistration
+                            ? "Sudah Mendaftar Lomba Lain"
+                            : "Daftar"}
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open('https://bit.ly/BookletLombaUISO2025', '_blank')}
+                          className="px-3 shrink-0"
+                        >
+                          <BookOpen className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 )

@@ -4,13 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Menu } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -34,6 +28,7 @@ export function Navbar() {
     { name: "Timeline", href: "#timeline" },
     // { name: "Testimoni", href: "#testimoni" },
     // { name: "Partner", href: "#partner" },
+    { name: "FAQ", href: "/faq" },
     {
       name: "TO TKA",
       href: "https://web.analitica.id/explore/%23p2025.uiso",
@@ -41,10 +36,7 @@ export function Navbar() {
     },
   ]
 
-  const handleScroll = (
-    e: React.MouseEvent<HTMLAnchorElement>,
-    href: string,
-  ) => {
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (href.startsWith("/#") || href.startsWith("#")) {
       e.preventDefault()
       const targetId = href.substring(href.lastIndexOf("#") + 1)
@@ -76,11 +68,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* --- PERBAIKAN DI SINI --- */}
-          <Link
-            href="/#"
-            onClick={e => handleScroll(e, "/#")}
-            className="flex items-center gap-3"
-          >
+          <Link href="/#" onClick={(e) => handleScroll(e, "/#")} className="flex items-center gap-3">
             <Image
               src="/images/uiso-logo.webp"
               alt="UISO 2025 Logo"
@@ -95,7 +83,7 @@ export function Navbar() {
           {/* ------------------------- */}
 
           <nav className="hidden lg:flex items-center gap-6">
-            {navItems.map(item =>
+            {navItems.map((item) =>
               item.external ? (
                 <a
                   key={item.name}
@@ -111,7 +99,7 @@ export function Navbar() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  onClick={e => handleScroll(e, item.href)}
+                  onClick={(e) => handleScroll(e, item.href)}
                   className="text-gray-700 hover:text-primary font-medium transition-colors relative group"
                 >
                   {item.name}
@@ -123,10 +111,7 @@ export function Navbar() {
 
           <div className="hidden lg:flex items-center gap-3">
             <Link href="/login">
-              <Button
-                variant="ghost"
-                className="text-gray-700 hover:text-primary font-medium"
-              >
+              <Button variant="ghost" className="text-gray-700 hover:text-primary font-medium">
                 Masuk
               </Button>
             </Link>
@@ -149,7 +134,7 @@ export function Navbar() {
                   <SheetTitle className="text-left">Menu</SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col gap-4 mt-8">
-                  {navItems.map(item =>
+                  {navItems.map((item) =>
                     item.external ? (
                       <a
                         key={item.name}
@@ -164,7 +149,7 @@ export function Navbar() {
                       <Link
                         key={item.name}
                         href={item.href}
-                        onClick={e => handleScroll(e, item.href)}
+                        onClick={(e) => handleScroll(e, item.href)}
                         className="text-gray-700 hover:text-primary font-medium py-2"
                       >
                         {item.name}
@@ -192,4 +177,3 @@ export function Navbar() {
     </header>
   )
 }
-
