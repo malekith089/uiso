@@ -11,7 +11,7 @@ export function TimelineSection() {
       description: "Pembukaan resmi pendaftaran UI Science Olympiad 2025.",
     },
     {
-      date: "17 Oktober 2025",
+      date: "10 Oktober 2025",
       title: "Penutupan Pendaftaran",
       description: "Batas akhir pendaftaran UI Science Olympiad 2025.",
     },
