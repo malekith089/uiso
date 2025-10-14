@@ -85,12 +85,12 @@ export default function PendaftaranPage() {
   ])
   const getWhatsAppGroupLink = (subjectId: string): string => {
     const whatsappLinks: Record<string, string> = {
-      '1': 'https://chat.whatsapp.com/BxOrpUX27zFAVv4wr3mwnq', // Matematika
-      '2': 'https://chat.whatsapp.com/HuPaWcRtD4RJ5a5VGpkPoa', // Fisika
-      '3': 'https://chat.whatsapp.com/Cq78ousYOOFA2uzFYFjASD', // Kimia
-      '4': 'https://chat.whatsapp.com/GlX7Sg1v8aJ5PdJAZLJwYX', // Biologi
-      '5': 'https://chat.whatsapp.com/GxaeXyg9JLhJH37E8LWMjc', // Geografi
-      '6': 'https://chat.whatsapp.com/KqLAr9jxV9z9fToXceFLbQ', // Kebumian
+      '1': 'https://chat.whatsapp.com/HZo4J2FMRErHtUrnn59JSj', // Matematika
+      '2': 'https://chat.whatsapp.com/HZo4J2FMRErHtUrnn59JSj', // Fisika
+      '3': 'https://chat.whatsapp.com/HZo4J2FMRErHtUrnn59JSj', // Kimia
+      '4': 'https://chat.whatsapp.com/HZo4J2FMRErHtUrnn59JSj', // Biologi
+      '5': 'https://chat.whatsapp.com/HZo4J2FMRErHtUrnn59JSj', // Geografi
+      '6': 'https://chat.whatsapp.com/HZo4J2FMRErHtUrnn59JSj', // Kebumian
     }
     return whatsappLinks[subjectId] || ''
   }
