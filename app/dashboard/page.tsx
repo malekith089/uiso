@@ -36,7 +36,7 @@ const getWhatsAppGroupLinks = (subjectId: string): { label: string; url: string 
     ],
     '2': [ // Fisika
       { label: 'Grup 1', url: 'https://chat.whatsapp.com/HuPaWcRtD4RJ5a5VGpkPoa?mode=wwt' },
-      { label: 'Grup 2', url: 'https://chat.whatsapp.com/HB5OdtvZrntJpdKNT4MLhs' },
+      { label: 'Grup 2', url: 'https://chat.whatsapp.com/KWdUBeSfcC6LZBmCxrqG1h' },
       { label: 'Grup 3', url: 'https://chat.whatsapp.com/GA5elOobpKY5lyLW7t3FYe?mode=wwt' },
       { label: 'Grup 4', url: 'https://chat.whatsapp.com/JitktR2DrVD804VDxmOfuF?mode=wwt' },
       { label: 'Grup 5', url: 'https://chat.whatsapp.com/FyTovuJsQIP1y9dt4aqeDV?mode=wwt' },
