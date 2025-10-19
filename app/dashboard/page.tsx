@@ -81,7 +81,7 @@ const getMainGroupLinks = (): { label: string; url: string }[] => {
     { label: 'Grup 2', url: 'https://chat.whatsapp.com/HZo4J2FMRErHtUrnn59JSj' },
     { label: 'Grup 3', url: 'https://chat.whatsapp.com/DDUNhcdHxsDLwX2R851782?mode=wwt' },
     { label: 'Grup 4', url: 'https://chat.whatsapp.com/EwXHuKLlkaF7ZLJdbR1he4?mode=wwt' },
-    { label: 'Grup 5', url: 'https://chat.whatsapp.com/HE3dkOuqa6M94GzHjfhnTp?mode=wwt' },
+    { label: 'Grup 5', url: 'https://chat.whatsapp.com/BvwVk7BG5So1HVivrrcnBh?mode=wwt' },
   ]
 }
 
