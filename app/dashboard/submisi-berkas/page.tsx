@@ -34,6 +34,7 @@ export default function SubmisiBerakasPage() {
   const [finalUrl, setFinalUrl] = useState("")
   const [isQualifiedForFinal, setIsQualifiedForFinal] = useState(false)
   const [submissionStage, setSubmissionStage] = useState<"preliminary" | "final" | null>(null)
+  const [submittedAt, setSubmittedAt] = useState<string | null>(null)
 
   const [deadlinePreliminary, setDeadlinePreliminary] = useState<string | null>(null)
   const [deadlineFinal, setDeadlineFinal] = useState<string | null>(null)
@@ -109,6 +110,7 @@ export default function SubmisiBerakasPage() {
           setPreliminaryUrl(data.preliminary_file_url || "")
           setFinalUrl(data.final_file_url || "")
           setIsQualifiedForFinal(data.is_qualified_for_final || false)
+          setSubmittedAt(data.submitted_at)
 
           if (data.preliminary_file_url && !data.is_qualified_for_final) {
             setSubmissionStage("preliminary")
@@ -304,26 +306,32 @@ export default function SubmisiBerakasPage() {
         )}
 
         {submissionStage === "preliminary" && (
-          <>
-            {preliminaryUrl && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm text-green-800">
-                  ✓ Berkas penyisihan sudah disubmit
-                  {/* Removed: invalid date display */}
-                </p>
-              </div>
-            )}
-            <FileUploadDeferred
-              label="Berkas Babak Penyisihan"
-              description="Format: PDF, Maksimal: 5MB"
-              accept=".pdf"
-              maxSize={5}
-              onFileSelect={setPreliminaryFile}
-              selectedFile={preliminaryFile}
-              required={!preliminaryUrl}
-            />
-          </>
-        )}
+  <>
+    {preliminaryUrl && submittedAt && (
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <p className="text-sm text-green-800">
+          ✓ Berkas penyisihan sudah disubmit pada{" "}
+          {new Date(submittedAt).toLocaleDateString("id-ID", {
+            day: 'numeric',
+            month: 'long', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+        </p>
+      </div>
+    )}
+    <FileUploadDeferred
+      label="Berkas Babak Penyisihan"
+      description="Format: PDF, Maksimal: 5MB"
+      accept=".pdf"
+      maxSize={5}
+      onFileSelect={setPreliminaryFile}
+      selectedFile={preliminaryFile}
+      required={!preliminaryUrl}
+    />
+  </>
+)}
 
         {submissionStage === "final" && (
           <>
