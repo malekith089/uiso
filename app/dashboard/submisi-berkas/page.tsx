@@ -411,6 +411,17 @@ export default function SubmisiBerakasPage() {
             >
               {isDeadlineExpired ? "Deadline Telah Berakhir" : "Menuju Google Form"}
             </Button>
+            <p className="text-xs text-gray-600 text-center w-full">
+              Jika tidak dapat mengakses dari tombol, buka melalui link:{" "}
+              <a 
+                href="https://bit.ly/SubmisiEGKUISO2025" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline font-medium"
+              >
+                bit.ly/SubmisiEGKUISO2025
+              </a>
+            </p>
           </CardFooter>
         </Card>
       </>
@@ -461,6 +472,17 @@ export default function SubmisiBerakasPage() {
           >
             📄 Format Abstrak (Template)
           </Button>
+          <p className="text-xs text-gray-600 text-center">
+            Jika tidak dapat mengakses dari tombol, buka melalui link:{" "}
+            <a 
+              href="https://bit.ly/FormatAbstrakSCCUISO2025" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline font-medium"
+            >
+              bit.ly/FormatAbstrakSCCUISO2025
+            </a>
+          </p>
         </div>
       </CardContent>
     </Card>
