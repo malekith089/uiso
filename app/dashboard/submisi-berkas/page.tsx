@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { FileUploadDeferred } from "@/components/ui/file-upload-deferred"
+import { DeadlineCountdown } from "@/components/ui/deadline-countdown"
 import { createClient } from "@/lib/supabase/client"
 import { showSuccessToast, showErrorToast } from "@/lib/error-handler"
 import { useUserProfile, useRegistrations } from "@/hooks/use-dashboard-data"
@@ -34,9 +35,55 @@ export default function SubmisiBerakasPage() {
   const [isQualifiedForFinal, setIsQualifiedForFinal] = useState(false)
   const [submissionStage, setSubmissionStage] = useState<"preliminary" | "final" | null>(null)
 
+  const [deadlinePreliminary, setDeadlinePreliminary] = useState<string | null>(null)
+  const [deadlineFinal, setDeadlineFinal] = useState<string | null>(null)
+  const [isDeadlineExpired, setIsDeadlineExpired] = useState(false)
+
   const approvedRegistration = registrations.find(
     (reg: any) => reg.status === "approved" && (reg.competitions.code === "SCC" || reg.competitions.code === "EGK"),
   )
+
+  useEffect(() => {
+    if (!approvedRegistration || approvedRegistration.competitions.code !== "SCC") {
+      return
+    }
+
+    const fetchDeadlines = async () => {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from("competitions")
+          .select("deadline_preliminary, deadline_final")
+          .eq("code", "SCC")
+          .single()
+
+        if (error && error.code !== "PGRST116") {
+          throw error
+        }
+
+        if (data) {
+          setDeadlinePreliminary(data.deadline_preliminary)
+          setDeadlineFinal(data.deadline_final)
+        }
+      } catch (error) {
+        console.error("Error fetching deadlines:", error)
+      }
+    }
+
+    fetchDeadlines()
+  }, [approvedRegistration])
+
+  const getCurrentDeadline = () => {
+    if (submissionStage === "preliminary" && deadlinePreliminary) {
+      return deadlinePreliminary
+    }
+    if (submissionStage === "final" && deadlineFinal) {
+      return deadlineFinal
+    }
+    return null
+  }
+
+  const currentDeadline = getCurrentDeadline()
 
   useEffect(() => {
     if (!approvedRegistration || approvedRegistration.competitions.code !== "SCC") {
@@ -229,6 +276,10 @@ export default function SubmisiBerakasPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {currentDeadline && (
+          <DeadlineCountdown deadline={currentDeadline} onExpired={() => setIsDeadlineExpired(true)} />
+        )}
+
         {submissionStage === "preliminary" && (
           <>
             {preliminaryUrl && (
@@ -270,7 +321,6 @@ export default function SubmisiBerakasPage() {
           </>
         )}
 
-        {/* Upload progress indicator */}
         {isUploading && (
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -292,11 +342,12 @@ export default function SubmisiBerakasPage() {
           disabled={
             (submissionStage === "preliminary" && !preliminaryFile) ||
             (submissionStage === "final" && !finalFile) ||
-            isSubmitting
+            isSubmitting ||
+            isDeadlineExpired
           }
           className="w-full"
         >
-          {isSubmitting ? "Mengirim..." : "Submit Berkas"}
+          {isDeadlineExpired ? "Deadline Telah Berakhir" : isSubmitting ? "Mengirim..." : "Submit Berkas"}
         </Button>
       </CardFooter>
     </Card>
