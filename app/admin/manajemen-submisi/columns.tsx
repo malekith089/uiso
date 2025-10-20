@@ -10,16 +10,22 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
+import { ChevronDown } from "lucide-react"
 
-// Tipe data disesuaikan untuk menerima `null`
+// Tipe data disesuaikan untuk menerima `null` dan `team_members`
 interface Submission {
   id: string
   submitted_at: string
   preliminary_file_url: string
   final_file_url: string
-  is_qualified_for_final: boolean | null // DIUBAH: dari boolean menjadi boolean | null
+  is_qualified_for_final: boolean | null
   registrations: {
     team_name: string
     profiles: {
@@ -27,12 +33,16 @@ interface Submission {
       email: string
       school_institution: string
     }
+    // TAMBAHKAN INI
+    team_members: Array<{
+      full_name: string
+    }> | null
   }
 }
 
 // Tipe fungsi callback disesuaikan untuk menerima `null`
 export function columns(
-  onUpdateFinalStatus: (id: string, status: boolean | null) => Promise<void>, // DIUBAH: nama dan tipe data
+  onUpdateFinalStatus: (id: string, status: boolean | null) => Promise<void>,
   isLoading: boolean,
 ): ColumnDef<Submission>[] {
   return [
@@ -41,15 +51,43 @@ export function columns(
       accessorKey: "registrations.team_name",
       header: "Nama Tim",
       cell: ({ row }) => {
+        // --- MODIFIKASI DIMULAI DI SINI ---
         const teamName = row.original.registrations.team_name
         const fullName = row.original.registrations.profiles.full_name
-        return <div className="font-medium">{teamName || fullName}</div>
+        const teamMembers = row.original.registrations.team_members || []
+        const isTeam = teamMembers.length > 0
+
+        return (
+          <div className="font-medium">
+            {isTeam ? (
+              <Collapsible>
+                <CollapsibleTrigger className="flex w-full items-center justify-between group">
+                  <div className="flex items-center gap-2">
+                    <span>{teamName || fullName}</span>
+                    <Badge variant="secondary">{teamMembers.length} Anggota</Badge>
+                  </div>
+                  <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-muted-foreground">
+                    {teamMembers.map((member, index) => (
+                      <li key={index}>{member.full_name}</li>
+                    ))}
+                  </ul>
+                </CollapsibleContent>
+              </Collapsible>
+            ) : (
+              fullName // Tampilkan nama ketua jika bukan tim (meski SCC seharusnya tim)
+            )}
+          </div>
+        )
+        // --- MODIFIKASI SELESAI ---
       },
     },
     {
       id: "asal_sekolah",
       accessorKey: "registrations.profiles.school_institution",
-      header: "Asal Sekolah",
+      header: "Asal Universitas",
       cell: ({ row }) => row.original.registrations.profiles.school_institution,
     },
     {
@@ -98,7 +136,6 @@ export function columns(
     {
       accessorKey: "is_qualified_for_final",
       header: "Status Kelolosan Final",
-      // ================== PERUBAHAN UTAMA DI SINI ==================
       cell: ({ row }) => {
         const currentStatus = row.original.is_qualified_for_final
         const submissionId = row.original.id
@@ -112,7 +149,6 @@ export function columns(
           onUpdateFinalStatus(submissionId, newStatus)
         }
 
-        // Ubah nilai (true/false/null) ke string agar bisa dibaca oleh <Select>
         const selectValue =
           currentStatus === null ? "null" : currentStatus.toString()
 
@@ -139,7 +175,6 @@ export function columns(
           </Select>
         )
       },
-      // =============================================================
     },
   ]
 }

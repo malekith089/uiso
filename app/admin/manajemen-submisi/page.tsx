@@ -27,6 +27,11 @@ async function fetchSubmissions() {
           full_name,
           email,
           school_institution
+        ),
+        team_members (
+          full_name,
+          email,
+          phone
         )
       )
     `,
