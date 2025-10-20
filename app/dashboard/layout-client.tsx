@@ -18,12 +18,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 const sidebarItems = [
   {
@@ -36,11 +31,11 @@ const sidebarItems = [
     href: "/dashboard/pendaftaran",
     icon: FileText,
   },
-  // {
-  //   title: "Submisi",
-  //   href: "/dashboard/submisi",
-  //   icon: Upload,
-  // },
+  {
+    title: "Submisi Berkas Lomba",
+    href: "/dashboard/submisi-berkas",
+    icon: Upload,
+  },
 ]
 
 interface DashboardLayoutClientProps {
@@ -49,11 +44,7 @@ interface DashboardLayoutClientProps {
   profile: any
 }
 
-export default function DashboardLayoutClient({
-  children,
-  user,
-  profile,
-}: DashboardLayoutClientProps) {
+export default function DashboardLayoutClient({ children, user, profile }: DashboardLayoutClientProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
@@ -81,7 +72,7 @@ export default function DashboardLayoutClient({
         "jenis_kelamin",
         "alamat",
       ]
-      const isComplete = requiredFields.every(field => profile[field])
+      const isComplete = requiredFields.every((field) => profile[field])
       setIsProfileComplete(isComplete)
     }
 
@@ -112,15 +103,13 @@ export default function DashboardLayoutClient({
       {/* Navigation */}
       <nav className="flex-1 space-y-2 p-4">
         <TooltipProvider delayDuration={100}>
-          {sidebarItems.map(item => {
+          {sidebarItems.map((item) => {
             const isActive = pathname === item.href
             const isRegistrationLink = item.href === "/dashboard/pendaftaran"
             const isDisabled = isRegistrationLink && !isProfileComplete
 
             const linkClasses = `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              isActive
-                ? "bg-primary text-primary-foreground"
-                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+              isActive ? "bg-primary text-primary-foreground" : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
             } ${isDisabled ? "cursor-not-allowed opacity-50" : ""}`
 
             if (isDisabled) {
@@ -140,12 +129,7 @@ export default function DashboardLayoutClient({
             }
 
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={linkClasses}
-                onClick={() => setSidebarOpen(false)}
-              >
+              <Link key={item.href} href={item.href} className={linkClasses} onClick={() => setSidebarOpen(false)}>
                 <item.icon className="h-4 w-4" />
                 {item.title}
               </Link>
@@ -167,9 +151,7 @@ export default function DashboardLayoutClient({
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-gray-900 truncate">
-              {profile?.full_name || "User"}
-            </p>
+            <p className="font-medium text-gray-900 truncate">{profile?.full_name || "User"}</p>
             <p className="text-gray-500 truncate">{user?.email}</p>
           </div>
         </div>
@@ -209,8 +191,7 @@ export default function DashboardLayoutClient({
               </SheetContent>
             </Sheet>
             <h1 className="text-xl font-semibold text-gray-900">
-              {sidebarItems.find(item => item.href === pathname)?.title ||
-                "Dashboard"}
+              {sidebarItems.find((item) => item.href === pathname)?.title || "Dashboard"}
             </h1>
           </div>
 
@@ -218,10 +199,7 @@ export default function DashboardLayoutClient({
             {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="relative h-8 w-8 rounded-full"
-                >
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback>
                       {profile?.full_name
@@ -236,12 +214,8 @@ export default function DashboardLayoutClient({
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {profile?.full_name || "User"}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email}
-                    </p>
+                    <p className="text-sm font-medium leading-none">{profile?.full_name || "User"}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -267,4 +241,3 @@ export default function DashboardLayoutClient({
     </div>
   )
 }
-
