@@ -13,6 +13,18 @@ import { useUserProfile, useRegistrations } from "@/hooks/use-dashboard-data"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale'; // Untuk format tanggal Indonesia
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { AlertCircle } from "lucide-react"
 
 interface SubmissionData {
   registration_id: string
@@ -36,7 +48,7 @@ export default function SubmisiBerakasPage() {
   // Store uploaded URLs after submission
   const [preliminaryUrl, setPreliminaryUrl] = useState("")
   const [finalUrl, setFinalUrl] = useState("")
-  const [isQualifiedForFinal, setIsQualifiedForFinal] = useState(false)
+  const [isQualifiedForFinal, setIsQualifiedForFinal] = useState<boolean | null>(null)
   const [submissionStage, setSubmissionStage] = useState<"preliminary" | "final" | null>(null)
   const [submittedAt, setSubmittedAt] = useState<string | null>(null)
   const [submissionHistory, setSubmissionHistory] = useState<any[]>([]); // Ganti 'any' dengan tipe data spesifik
@@ -151,16 +163,15 @@ export default function SubmisiBerakasPage() {
         if (data) {
           setPreliminaryUrl(data.preliminary_file_url || "")
           setFinalUrl(data.final_file_url || "")
-          setIsQualifiedForFinal(data.is_qualified_for_final || false)
+          setIsQualifiedForFinal(data.is_qualified_for_final)
           setSubmittedAt(data.submitted_at)
 
-          if (data.preliminary_file_url && !data.is_qualified_for_final) {
-            setSubmissionStage("preliminary")
-          } else if (data.is_qualified_for_final) {
-            setSubmissionStage("final")
-          } else {
-            setSubmissionStage("preliminary")
-          }
+          if (data.is_qualified_for_final === true) {
+              setSubmissionStage("final")
+            } else {
+              // Ini akan mencakup 'false' dan 'null'
+              setSubmissionStage("preliminary")
+            }
         } else {
           setSubmissionStage("preliminary")
         }
@@ -350,6 +361,16 @@ export default function SubmisiBerakasPage() {
 
         {submissionStage === "preliminary" && (
   <>
+  {isQualifiedForFinal === false && (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-sm text-red-800 font-medium">
+          Mohon maaf, Anda belum lolos ke babak final.
+        </p>
+        <p className="text-sm text-red-700 mt-1">
+          Terima kasih atas partisipasi Anda. Jangan berkecil hati dan sampai jumpa di UISO tahun depan!
+        </p>
+      </div>
+    )}
     {preliminaryUrl && submittedAt && (
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
         <p className="text-sm text-green-800">
@@ -411,18 +432,68 @@ export default function SubmisiBerakasPage() {
         )}
       </CardContent>
       <CardFooter>
-        <Button
-          onClick={handleSubmitSCC}
-          disabled={
-            (submissionStage === "preliminary" && !preliminaryFile) ||
-            (submissionStage === "final" && !finalFile) ||
-            isSubmitting ||
-            isDeadlineExpired
-          }
-          className="w-full"
-        >
-          {isDeadlineExpired ? "Deadline Telah Berakhir" : isSubmitting ? "Mengirim..." : "Submit Berkas"}
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            {/* Tombol ini sekarang memicu Dialog. Logika disabled tetap sama. */}
+            <Button
+              disabled={
+                // 1. Sedang submit atau deadline berakhir
+                isSubmitting ||
+                isDeadlineExpired ||
+                
+                // 2. Dinyatakan TIDAK LOLOS
+                isQualifiedForFinal === false ||
+
+                // 3. Untuk stage penyisihan: disable jika BELUM pilih file ATAU SUDAH submit
+                (submissionStage === "preliminary" && (!preliminaryFile || !!preliminaryUrl)) ||
+                
+                // 4. Untuk stage final: disable jika BELUM pilih file ATAU SUDAH submit (jika Anda ingin final juga tidak bisa resubmit)
+                // Jika final BOLEH resubmit, hapus '|| !!finalUrl' di bawah ini
+                (submissionStage === "final" && (!finalFile || !!finalUrl))
+              }
+              className="w-full"
+            >
+              {isDeadlineExpired ? "Deadline Telah Berakhir" : isSubmitting ? "Mengirim..." : "Submit Berkas"}
+            </Button>
+          </AlertDialogTrigger>
+          
+          {/* Ini adalah konten Pop-up Konfirmasi */}
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="text-yellow-500" />
+                  Konfirmasi Submisi Berkas
+                </div>
+              </AlertDialogTitle>
+              <AlertDialogDescription className="pt-2">
+                Pastikan file yang Anda unggah sudah benar.
+                <br /><br />
+                {submissionStage === "preliminary" ? (
+                  <strong>
+                    Submisi berkas babak penyisihan bersifat final dan tidak dapat diubah (resubmit)
+                    setelah Anda menekan tombol "Submit Sekarang".
+                  </strong>
+                ) : (
+                  <strong>
+                    Submisi berkas babak final tidak dapat diubah (resubmit)
+                    setelah Anda menekan tombol "Submit Sekarang".
+                  </strong>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Batal, Cek Lagi</AlertDialogCancel>
+              {/* Tombol ini yang akan benar-benar menjalankan submit */}
+              <AlertDialogAction
+                onClick={handleSubmitSCC}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Mengirim..." : "Ya, Submit Sekarang"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardFooter>
     </Card>
     {submissionHistory.length > 0 && (

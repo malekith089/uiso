@@ -2,16 +2,24 @@
 
 import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 
+// Tipe data disesuaikan untuk menerima `null`
 interface Submission {
   id: string
   submitted_at: string
   preliminary_file_url: string
   final_file_url: string
-  is_qualified_for_final: boolean
+  is_qualified_for_final: boolean | null // DIUBAH: dari boolean menjadi boolean | null
   registrations: {
     team_name: string
     profiles: {
@@ -22,8 +30,9 @@ interface Submission {
   }
 }
 
+// Tipe fungsi callback disesuaikan untuk menerima `null`
 export function columns(
-  onToggleFinalStatus: (id: string, status: boolean) => Promise<void>,
+  onUpdateFinalStatus: (id: string, status: boolean | null) => Promise<void>, // DIUBAH: nama dan tipe data
   isLoading: boolean,
 ): ColumnDef<Submission>[] {
   return [
@@ -81,20 +90,56 @@ export function columns(
       accessorKey: "submitted_at",
       header: "Waktu Submisi",
       cell: ({ row }) => {
+        if (!row.original.submitted_at) return "-"
         const date = new Date(row.original.submitted_at)
         return format(date, "dd MMMM yyyy HH:mm", { locale: id })
       },
     },
     {
       accessorKey: "is_qualified_for_final",
-      header: "Lolos ke Final?",
-      cell: ({ row }) => (
-        <Switch
-          checked={row.original.is_qualified_for_final}
-          onCheckedChange={(checked) => onToggleFinalStatus(row.original.id, checked)}
-          disabled={isLoading}
-        />
-      ),
+      header: "Status Kelolosan Final",
+      // ================== PERUBAHAN UTAMA DI SINI ==================
+      cell: ({ row }) => {
+        const currentStatus = row.original.is_qualified_for_final
+        const submissionId = row.original.id
+
+        const handleStatusChange = (newStatusValue: string) => {
+          let newStatus: boolean | null
+          if (newStatusValue === "true") newStatus = true
+          else if (newStatusValue === "false") newStatus = false
+          else newStatus = null // Untuk "null" (menunggu)
+
+          onUpdateFinalStatus(submissionId, newStatus)
+        }
+
+        // Ubah nilai (true/false/null) ke string agar bisa dibaca oleh <Select>
+        const selectValue =
+          currentStatus === null ? "null" : currentStatus.toString()
+
+        return (
+          <Select
+            value={selectValue}
+            onValueChange={handleStatusChange}
+            disabled={isLoading}
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Pilih status..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="null">
+                <Badge variant="secondary" className="w-full justify-center">Menunggu</Badge>
+              </SelectItem>
+              <SelectItem value="true">
+                <Badge className="bg-green-600 hover:bg-green-700 w-full justify-center">Lolos</Badge>
+              </SelectItem>
+              <SelectItem value="false">
+                <Badge variant="destructive" className="w-full justify-center">Tidak Lolos</Badge>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        )
+      },
+      // =============================================================
     },
   ]
 }
