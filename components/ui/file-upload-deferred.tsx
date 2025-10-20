@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -31,6 +31,27 @@ export function FileUploadDeferred({
   const [dragActive, setDragActive] = useState(false)
   const [error, setError] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  useEffect(() => {
+    let objectUrl: string | null = null
+
+    // Cek jika ada file terpilih dan tipenya adalah PDF
+    if (selectedFile && selectedFile.type === "application/pdf") {
+      // Buat URL lokal untuk file tersebut
+      objectUrl = URL.createObjectURL(selectedFile)
+      setPreviewUrl(objectUrl)
+    } else {
+      // Jika bukan PDF atau file dihapus, hapus preview
+      setPreviewUrl(null)
+    }
+
+    // Fungsi cleanup: Mencegah memory leak
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl)
+      }
+    }
+  }, [selectedFile])
 
   const validateFile = (file: File): boolean => {
     setError("")
@@ -150,7 +171,13 @@ export function FileUploadDeferred({
             {/* Header file info */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {getFileIcon(selectedFile.name)}
+{previewUrl && (
+              <Button variant="outline" size="sm" asChild className="mt-2 w-full">
+                <a href={previewUrl} target="_blank" rel="noopener noreferrer">
+                  Lihat
+                </a>
+              </Button>
+            )}
                 <div className="flex-1">
                   <p className="text-sm font-medium truncate">{selectedFile.name}</p>
                   <p className="text-xs text-gray-500">{(selectedFile.size / 1024 / 1024).toFixed(2)}MB</p>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -9,6 +10,9 @@ import { DeadlineCountdown } from "@/components/ui/deadline-countdown"
 import { createClient } from "@/lib/supabase/client"
 import { showSuccessToast, showErrorToast } from "@/lib/error-handler"
 import { useUserProfile, useRegistrations } from "@/hooks/use-dashboard-data"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale'; // Untuk format tanggal Indonesia
 
 interface SubmissionData {
   registration_id: string
@@ -35,6 +39,8 @@ export default function SubmisiBerakasPage() {
   const [isQualifiedForFinal, setIsQualifiedForFinal] = useState(false)
   const [submissionStage, setSubmissionStage] = useState<"preliminary" | "final" | null>(null)
   const [submittedAt, setSubmittedAt] = useState<string | null>(null)
+  const [submissionHistory, setSubmissionHistory] = useState<any[]>([]); // Ganti 'any' dengan tipe data spesifik
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const [deadlinePreliminary, setDeadlinePreliminary] = useState<string | null>(null)
   const [deadlineFinal, setDeadlineFinal] = useState<string | null>(null)
@@ -73,6 +79,42 @@ export default function SubmisiBerakasPage() {
 
     fetchDeadlines()
   }, [approvedRegistration])
+
+  useEffect(() => {
+    const fetchSubmissionHistory = async () => {
+        if (!approvedRegistration) return; 
+
+        setIsLoadingHistory(true);
+        try {
+            const supabase = createClient();
+            // Catatan: Logic submit Anda saat ini menggunakan 'upsert'
+            // yang berarti hanya akan ada 1 baris data (status terakhir).
+            // Kode ini akan tetap menampilkannya dalam tabel.
+            const { data, error } = await supabase
+                .from('submissions_lomba')
+                .select(`
+                    submitted_at,
+                    updated_at,
+                    preliminary_file_url,
+                    final_file_url,
+                    is_qualified_for_final
+                `)
+                .eq('registration_id', approvedRegistration.id)
+                .order('updated_at', { ascending: false }); // Urutkan berdasarkan update terbaru
+
+            if (error) throw error;
+            setSubmissionHistory(data || []); // data akan berupa array [ { ... } ]
+
+        } catch (error: any) {
+            showErrorToast(error, "Gagal memuat history submisi");
+            setSubmissionHistory([]); 
+        } finally {
+            setIsLoadingHistory(false);
+        }
+    };
+
+    fetchSubmissionHistory();
+  }, [approvedRegistration, isSubmitting]);
 
   const getCurrentDeadline = () => {
     if (submissionStage === "preliminary" && deadlinePreliminary) {
@@ -289,6 +331,7 @@ export default function SubmisiBerakasPage() {
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>
@@ -382,5 +425,56 @@ export default function SubmisiBerakasPage() {
         </Button>
       </CardFooter>
     </Card>
+    {submissionHistory.length > 0 && (
+    <Card className="mt-6">
+        <CardHeader>
+            <CardTitle>History Submisi Anda</CardTitle>
+            <CardDescription>Riwayat pengumpulan berkas untuk {approvedRegistration?.competitions.name}</CardDescription>
+        </CardHeader>
+        <CardContent>
+            {isLoadingHistory ? (
+                <p>Memuat history...</p> // Atau tampilkan skeleton loading
+            ) : (
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Tanggal Submit</TableHead>
+                            <TableHead>Berkas Penyisihan</TableHead>
+                            <TableHead>Berkas Final</TableHead>
+                            <TableHead>Status Final</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {submissionHistory.map((submission, index) => (
+                            <TableRow key={index}>
+                                <TableCell>
+                                    {submission.submitted_at ? format(new Date(submission.submitted_at), 'dd MMM yyyy HH:mm', { locale: id }) : '-'}
+                                </TableCell>
+                                <TableCell>
+                                    {submission.preliminary_file_url ? (
+                                        <a href={submission.preliminary_file_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Lihat</a>
+                                    ) : '-'}
+                                </TableCell>
+                                <TableCell>
+                                    {submission.final_file_url ? (
+                                        <a href={submission.final_file_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Lihat</a>
+                                    ) : '-'}
+                                </TableCell>
+                                 <TableCell>
+                                    {submission.preliminary_file_url ? ( // Tampilkan status hanya jika penyisihan sudah submit
+                                        submission.is_qualified_for_final === true ? <Badge variant="default">Lolos</Badge> :
+                                        submission.is_qualified_for_final === false ? <Badge variant="destructive">Tidak Lolos</Badge> :
+                                        <Badge variant="secondary">Menunggu</Badge>
+                                    ) : '-'}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            )}
+        </CardContent>
+    </Card>
+)}
+</>
   )
 }
