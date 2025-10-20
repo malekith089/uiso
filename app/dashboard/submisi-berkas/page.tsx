@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { FileUploadDeferred } from "@/components/ui/file-upload-deferred"
 import { DeadlineCountdown } from "@/components/ui/deadline-countdown"
@@ -36,6 +38,8 @@ interface SubmissionData {
 export default function SubmisiBerakasPage() {
   const { data: userProfile, isLoading: profileLoading } = useUserProfile()
   const { data: registrations = [], isLoading: registrationsLoading } = useRegistrations()
+
+  const [isAgreed, setIsAgreed] = useState(false)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isFetching, setIsFetching] = useState(false)
@@ -331,6 +335,7 @@ export default function SubmisiBerakasPage() {
 
     setPreliminaryFile(null)
     setFinalFile(null)
+    setIsAgreed(false) 
 
     if (submissionStage === "preliminary") {
       setPreliminaryUrl(newPreliminaryUrl)
@@ -532,6 +537,35 @@ export default function SubmisiBerakasPage() {
           </>
         )}
 
+        <div className="border-t pt-4">
+          <div className="flex items-start space-x-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
+            <Checkbox 
+              id="agreement" 
+              checked={isAgreed}
+              onCheckedChange={(checked) => setIsAgreed(checked === true)}
+              className="mt-1"
+            />
+            <div className="flex-1">
+              <Label 
+                htmlFor="agreement" 
+                className="text-sm font-medium leading-relaxed cursor-pointer"
+              >
+                Pernyataan Orisinalitas dan Persetujuan <span className="text-red-600">*</span>
+              </Label>
+              <ul className="mt-2 space-y-1 text-sm text-gray-700">
+                <li className="flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>Saya menyatakan bahwa data yang saya isi benar dan dapat dipertanggungjawabkan.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>Saya bersedia mengikuti ketentuan yang berlaku sebagai peserta UISO 2025.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         {isUploading && (
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -556,14 +590,17 @@ export default function SubmisiBerakasPage() {
                 // 1. Sedang submit atau deadline berakhir
                 isSubmitting ||
                 isDeadlineExpired ||
+
+                // 2. Belum centang pernyataan
+                !isAgreed ||
                 
-                // 2. Dinyatakan TIDAK LOLOS
+                // 3. Dinyatakan TIDAK LOLOS
                 isQualifiedForFinal === false ||
 
-                // 3. Untuk stage penyisihan: disable jika BELUM pilih file ATAU SUDAH submit
+                // 4. Untuk stage penyisihan: disable jika BELUM pilih file ATAU SUDAH submit
                 (submissionStage === "preliminary" && (!preliminaryFile || !!preliminaryUrl)) ||
                 
-                // 4. Untuk stage final: disable jika BELUM pilih file ATAU SUDAH submit (jika Anda ingin final juga tidak bisa resubmit)
+                // 5. Untuk stage final: disable jika BELUM pilih file ATAU SUDAH submit (jika Anda ingin final juga tidak bisa resubmit)
                 // Jika final BOLEH resubmit, hapus '|| !!finalUrl' di bawah ini
                 (submissionStage === "final" && (!finalFile || !!finalUrl))
               }
@@ -634,8 +671,25 @@ export default function SubmisiBerakasPage() {
                     <TableBody>
                         {submissionHistory.map((submission, index) => (
                             <TableRow key={index}>
-                                <TableCell>
-                                    {submission.submitted_at ? format(new Date(submission.submitted_at), 'dd MMM yyyy HH:mm', { locale: id }) : '-'}
+                                <TableCell className="min-w-[220px]">
+                                    {/* 1. Waktu Penyisihan */}
+                                    {submission.submitted_at ? (
+                                        <div className="text-sm">
+                                            {format(new Date(submission.submitted_at), 'dd MMM yyyy HH:mm', { locale: id })}
+                                            <span className="text-gray-600 ml-1.5">(Penyisihan)</span>
+                                        </div>
+                                    ) : null}
+
+                                    {/* 2. Waktu Final (Hanya tampil jika ada file final & waktunya beda) */}
+                                    {submission.final_file_url && submission.updated_at && submission.updated_at !== submission.submitted_at ? (
+                                        <div className="text-sm mt-1">
+                                            {format(new Date(submission.updated_at), 'dd MMM yyyy HH:mm', { locale: id })}
+                                            <span className="text-blue-600 font-medium ml-1.5">(Final)</span>
+                                        </div>
+                                    ) : null}
+
+                                    {/* 3. Fallback jika tidak ada data sama sekali */}
+                                    {!submission.submitted_at && !submission.final_file_url ? '-' : null}
                                 </TableCell>
                                 <TableCell>
                                     {submission.preliminary_file_url ? (
