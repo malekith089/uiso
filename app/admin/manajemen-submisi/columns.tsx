@@ -28,6 +28,7 @@ export function columns(
 ): ColumnDef<Submission>[] {
   return [
     {
+      id: "nama_tim",
       accessorKey: "registrations.team_name",
       header: "Nama Tim",
       cell: ({ row }) => {
@@ -37,11 +38,13 @@ export function columns(
       },
     },
     {
+      id: "asal_sekolah",
       accessorKey: "registrations.profiles.school_institution",
       header: "Asal Sekolah",
       cell: ({ row }) => row.original.registrations.profiles.school_institution,
     },
     {
+      id: "email",
       accessorKey: "registrations.profiles.email",
       header: "Email",
       cell: ({ row }) => row.original.registrations.profiles.email,

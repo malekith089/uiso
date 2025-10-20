@@ -111,7 +111,7 @@ export default function ClientPage({ submissions }: ClientPageProps) {
         columns={columns(handleToggleFinalStatus, isLoading)}
         data={submissions}
         searchPlaceholder="Cari berdasarkan nama tim atau email..."
-        searchColumn="registrations"
+        searchColumn="nama_tim"
       />
     </div>
   )
