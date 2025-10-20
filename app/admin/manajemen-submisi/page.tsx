@@ -13,6 +13,7 @@ async function fetchSubmissions() {
       `
       id,
       submitted_at,
+      updated_at,
       preliminary_file_url,
       final_file_url,
       is_qualified_for_final,

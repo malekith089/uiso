@@ -57,10 +57,57 @@ export default function SubmisiBerakasPage() {
   const [deadlinePreliminary, setDeadlinePreliminary] = useState<string | null>(null)
   const [deadlineFinal, setDeadlineFinal] = useState<string | null>(null)
   const [isDeadlineExpired, setIsDeadlineExpired] = useState(false)
+  const sanitizeForPath = (str: string | null | undefined): string => {
+  if (!str) {
+    // Fallback jika data tidak ada
+    return "data_tidak_lengkap"; 
+  }
+  
+  return str
+    .toLowerCase()
+    .replace(/\s+/g, "_") // Ganti spasi (atau banyak spasi) dengan satu underscore
+    .replace(/[^a-z0-9_.-]/g, ""); // Hapus semua karakter kecuali huruf, angka, _, ., -
+};
 
   const approvedRegistration = registrations.find(
     (reg: any) => reg.status === "approved" && (reg.competitions.code === "SCC" || reg.competitions.code === "EGK"),
   )
+
+  useEffect(() => {
+    if (!approvedRegistration) {
+      return
+    }
+
+    // Fetch deadline untuk SCC atau EGK
+    const competitionCode = approvedRegistration.competitions.code;
+    if (competitionCode !== "SCC" && competitionCode !== "EGK") {
+      return
+    }
+
+    const fetchDeadlines = async () => {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from("competitions")
+          .select("deadline_preliminary, deadline_final")
+          .eq("code", competitionCode)
+          .single()
+
+        if (error && error.code !== "PGRST116") {
+          throw error
+        }
+
+        if (data) {
+          setDeadlinePreliminary(data.deadline_preliminary)
+          setDeadlineFinal(data.deadline_final)
+        }
+      } catch (error) {
+        console.error("Error fetching deadlines:", error)
+      }
+    }
+
+    fetchDeadlines()
+  }, [approvedRegistration])
 
   useEffect(() => {
     if (!approvedRegistration || approvedRegistration.competitions.code !== "SCC") {
@@ -190,6 +237,7 @@ export default function SubmisiBerakasPage() {
     const formData = new FormData()
     formData.append("file", file)
     formData.append("folder", folder)
+    formData.append("filename", file.name)
 
     const response = await fetch("/api/upload", {
       method: "POST",
@@ -216,18 +264,27 @@ export default function SubmisiBerakasPage() {
     setIsUploading(true)
     setUploadProgress(0)
 
+    // 1. Ambil data nama dan sekolah (GANTI PROPERTI JIKA PERLU)
+      const leaderName = userProfile.full_name;
+      const schoolName = userProfile.school_institution;
+
+      // 2. Buat nama folder kustom yang sudah bersih
+      const customFolderName = `${sanitizeForPath(leaderName)}_${sanitizeForPath(schoolName)}`;
+
     let newPreliminaryUrl = preliminaryUrl
     let newFinalUrl = finalUrl
 
     if (submissionStage === "preliminary" && preliminaryFile) {
       setUploadProgress(50)
-      newPreliminaryUrl = await uploadFile(preliminaryFile, "scc-submissions/preliminary")
-    }
+        const fullPath = `scc-submissions/preliminary/${customFolderName}`
+        newPreliminaryUrl = await uploadFile(preliminaryFile, fullPath)
+      }
 
     if (submissionStage === "final" && finalFile) {
       setUploadProgress(50)
-      newFinalUrl = await uploadFile(finalFile, "scc-submissions/final")
-    }
+        const fullPath = `scc-submissions/final/${customFolderName}`
+        newFinalUrl = await uploadFile(finalFile, fullPath)
+      }
 
     setUploadProgress(75)
 
@@ -294,7 +351,7 @@ export default function SubmisiBerakasPage() {
     setIsUploading(false)
     setUploadProgress(0)
   }
-}, [approvedRegistration, preliminaryFile, finalFile, submissionStage, preliminaryUrl, finalUrl])
+}, [approvedRegistration, userProfile, preliminaryFile, finalFile, submissionStage, preliminaryUrl, finalUrl])
 
   if (profileLoading || registrationsLoading || isFetching) {
     return (
@@ -322,27 +379,86 @@ export default function SubmisiBerakasPage() {
 
   if (approvedRegistration.competitions.code === "EGK") {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Submisi Lomba EGK</CardTitle>
-          <CardDescription>Submisi untuk lomba EGK dilakukan melalui Google Form.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-600 mb-4">
-            Silakan klik tombol di bawah untuk mengakses formulir submisi EGK.
-          </p>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={() => window.open("https://forms.gle/YOUR_GFORM_URL_HERE", "_blank")} className="w-full">
-            Menuju Google Form
-          </Button>
-        </CardFooter>
-      </Card>
+      <>
+        <Card>
+          <CardHeader>
+            <CardTitle>Submisi Lomba EGK</CardTitle>
+            <CardDescription>Submisi untuk lomba EGK dilakukan melalui Google Form.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Deadline Card untuk EGK */}
+            {deadlinePreliminary && (
+              <DeadlineCountdown 
+                deadline={deadlinePreliminary} 
+                onExpired={() => setIsDeadlineExpired(true)} 
+              />
+            )}
+            
+            <p className="text-sm text-gray-600">
+              Silakan klik tombol di bawah untuk mengakses formulir submisi EGK.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              onClick={() => window.open("https://docs.google.com/forms/d/e/1FAIpQLSclmdo0HYENeEQUqX5n0-u2G1mfBQpbfisBJw4R4wE-de9PPg/viewform", "_blank")} 
+              className="w-full"
+              disabled={isDeadlineExpired}
+            >
+              {isDeadlineExpired ? "Deadline Telah Berakhir" : "Menuju Google Form"}
+            </Button>
+          </CardFooter>
+        </Card>
+      </>
     )
   }
 
   return (
     <>
+        <Card className="mb-6 border-blue-200 bg-blue-50/50">
+      <CardHeader>
+        <CardTitle className="text-blue-900">📋 Mekanisme Penyisihan SCC</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="prose prose-sm max-w-none text-gray-700">
+          <h4 className="font-semibold text-gray-900 mb-2">Ketentuan Pengumpulan:</h4>
+          <ol className="list-decimal list-inside space-y-2 ml-2">
+            <li>Setiap peserta harus membuat dan mengirimkan <strong>abstrak solusi</strong> sesuai tema dan subtema yang dipilih.</li>
+            <li>
+              Periode pengumpulan: <strong>20 Oktober 2025 - 3 November 2025</strong>
+              <br />
+              <span className="text-red-600 font-medium">⚠️ Terdapat pengurangan nilai 1% per 1 jam keterlambatan.</span>
+            </li>
+            <li>
+              Format abstrak solusi:
+              <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
+                <li>Ukuran Kertas: A4</li>
+                <li>Font: Times New Roman, 12pt</li>
+                <li>Spasi: 1,5pt, Paragraf: Justify</li>
+                <li>Margin: Atas 3cm, Bawah 3cm, Kanan 3cm, Kiri 4cm</li>
+                <li>Daftar pustaka: Spasi 1,15, format APA Style</li>
+              </ul>
+            </li>
+            <li>
+              Format nama file PDF: <br />
+              <code className="bg-gray-200 px-2 py-1 rounded text-xs">
+                NamaLengkapAnggota1_NamaLengkapAnggota2_NamaLengkapAnggota3_Universitas_Abstrak_JudulAbstrak.pdf
+              </code>
+            </li>
+            <li>Jika abstrak mengandung kutipan, <strong>wajib sertakan referensi sumber</strong> untuk menghindari plagiasi.</li>
+          </ol>
+        </div>
+        
+        <div className="pt-2">
+          <Button
+            variant="outline"
+            className="w-full border-blue-300 text-blue-700 hover:bg-blue-100"
+            onClick={() => window.open("https://bit.ly/FormatAbstrakSCCUISO2025", "_blank")}
+          >
+            📄 Format Abstrak (Template)
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
     <Card>
       <CardHeader>
         <CardTitle>
@@ -401,7 +517,7 @@ export default function SubmisiBerakasPage() {
           <>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                ✓ Berkas penyisihan sudah disubmit. Silakan upload berkas final Anda.
+                ✓ Selamat! Anda telah lolos ke babak final. Silakan upload berkas final Anda.
               </p>
             </div>
             <FileUploadDeferred
@@ -512,7 +628,7 @@ export default function SubmisiBerakasPage() {
                             <TableHead>Tanggal Submit</TableHead>
                             <TableHead>Berkas Penyisihan</TableHead>
                             <TableHead>Berkas Final</TableHead>
-                            <TableHead>Status Final</TableHead>
+                            <TableHead>Status Lolos Final</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
