@@ -58,6 +58,7 @@ import { showErrorToast, showSuccessToast, withRetry } from "@/lib/error-handler
 import { ErrorBoundary } from "@/components/error-boundary"
 import { useToast } from "@/hooks/use-toast"
 import type { UnifiedRegistration } from "./page"
+import { getOptimizedCloudinaryUrl } from "@/lib/utils"; // <-- Impor fungsi helper
 
 
 const getFileType = (url: string): "image" | "pdf" | "unknown" => {
@@ -1627,7 +1628,7 @@ const handleProfileInputChange = (field: string, value: any) => {
                             {selectedRegistration.identity_card_url ? (
                               <div className="relative">
                                 <img
-                                  src={selectedRegistration.identity_card_url || "/placeholder.svg"}
+                                  src={getOptimizedCloudinaryUrl(selectedRegistration.identity_card_url, 300)}
                                   alt="Kartu Identitas"
                                   className="w-full h-32 object-cover rounded border"
                                 />
@@ -1674,7 +1675,7 @@ const handleProfileInputChange = (field: string, value: any) => {
                           {selectedRegistration.engagement_proof_url ? (
                             <div className="relative">
                               <img
-                                src={selectedRegistration.engagement_proof_url || "/placeholder.svg"}
+                                src={getOptimizedCloudinaryUrl(selectedRegistration.engagement_proof_url, 300)}
                                 alt="Bukti Engagement"
                                 className="w-full h-32 object-cover rounded border"
                               />
@@ -1716,7 +1717,7 @@ const handleProfileInputChange = (field: string, value: any) => {
                           {selectedRegistration.payment_proof_url ? (
                             <div className="relative">
                               <img
-                                src={selectedRegistration.payment_proof_url || "/placeholder.svg"}
+                                src={getOptimizedCloudinaryUrl(selectedRegistration.payment_proof_url, 300)}
                                 alt="Bukti Pembayaran"
                                 className="w-full h-32 object-cover rounded border"
                               />

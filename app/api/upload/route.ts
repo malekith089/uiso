@@ -6,6 +6,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get("file") as File
     const folder = (formData.get("folder") as string) || "uiso-2025"
+    const filename = formData.get("filename") as string // <-- 1. AMBIL FILENAME
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
@@ -15,6 +16,12 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
+    // 2. DAPATKAN NAMA FILE TANPA EKSTENSI
+    // (mis: "makalah_saya.pdf" -> "makalah_saya")
+    // Kita gunakan 'filename' yg dikirim, fallback ke 'file.name' jika gagal
+    const actualFilename = filename || file.name
+    const publicId = actualFilename.split(".").slice(0, -1).join(".")
+    
     // Upload to Cloudinary
     const result = await new Promise((resolve, reject) => {
       cloudinary.uploader
@@ -22,6 +29,21 @@ export async function POST(request: NextRequest) {
           {
             folder: folder,
             resource_type: "auto",
+
+            // --- 3. UBAH OPSI DI SINI ---
+            /**
+             * Set public_id secara manual.
+             * Cloudinary akan otomatis menambahkan ekstensi file (.pdf)
+             * karena resource_type="auto"
+             */
+            public_id: publicId,
+            
+            /** Izinkan menimpa file (resubmit) */
+            overwrite: true,
+            
+            // 'use_filename' dan 'unique_filename' tidak diperlukan lagi
+            // use_filename: true,       // HAPUS/KOMENTARI
+            // unique_filename: false,   // HAPUS/KOMENTARI
           },
           (error, result) => {
             if (error) reject(error)

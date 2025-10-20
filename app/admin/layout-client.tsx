@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LayoutDashboard, Users, FileCheck, Trophy, Menu, LogOut, Shield, Settings } from "lucide-react"
+import { LayoutDashboard, FileCheck, Menu, LogOut, Shield, Settings } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
@@ -29,6 +29,11 @@ const sidebarItems = [
     title: "Manajemen Pendaftaran",
     href: "/admin/unified",
     icon: Settings,
+  },
+  {
+    title: "Manajemen Submisi",
+    href: "/admin/manajemen-submisi",
+    icon: FileCheck,
   },
   // {
   //   title: "Manajemen Akun",
