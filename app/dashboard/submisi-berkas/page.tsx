@@ -151,72 +151,95 @@ export default function SubmisiBerakasPage() {
   }
 
   const handleSubmitSCC = useCallback(async () => {
-    if (!approvedRegistration) return
+  if (!approvedRegistration) return
 
-    if (submissionStage === "preliminary" && !preliminaryFile) return
-    if (submissionStage === "final" && !finalFile) return
+  if (submissionStage === "preliminary" && !preliminaryFile) return
+  if (submissionStage === "final" && !finalFile) return
 
-    try {
-      setIsSubmitting(true)
-      setIsUploading(true)
-      setUploadProgress(0)
+  try {
+    setIsSubmitting(true)
+    setIsUploading(true)
+    setUploadProgress(0)
 
-      let newPreliminaryUrl = preliminaryUrl
-      let newFinalUrl = finalUrl
+    let newPreliminaryUrl = preliminaryUrl
+    let newFinalUrl = finalUrl
 
-      if (submissionStage === "preliminary" && preliminaryFile) {
-        setUploadProgress(50)
-        newPreliminaryUrl = await uploadFile(preliminaryFile, "scc-submissions/preliminary")
-      }
+    if (submissionStage === "preliminary" && preliminaryFile) {
+      setUploadProgress(50)
+      newPreliminaryUrl = await uploadFile(preliminaryFile, "scc-submissions/preliminary")
+    }
 
-      if (submissionStage === "final" && finalFile) {
-        setUploadProgress(50)
-        newFinalUrl = await uploadFile(finalFile, "scc-submissions/final")
-      }
+    if (submissionStage === "final" && finalFile) {
+      setUploadProgress(50)
+      newFinalUrl = await uploadFile(finalFile, "scc-submissions/final")
+    }
 
-      setUploadProgress(75)
+    setUploadProgress(75)
 
-      const supabase = createClient()
-      const submissionData: SubmissionData = {
-        registration_id: approvedRegistration.id,
-        preliminary_file_url: newPreliminaryUrl,
-        final_file_url: newFinalUrl,
-        submitted_at: new Date().toISOString(),
-      }
+    const supabase = createClient()
+    const now = new Date().toISOString()
+    
+    // FIXED: Buat object submissionData dengan struktur yang benar
+    const submissionData: any = {
+      registration_id: approvedRegistration.id,
+      preliminary_file_url: newPreliminaryUrl,
+      final_file_url: newFinalUrl,
+      updated_at: now,
+    }
 
-      const { error } = await supabase.from("submissions_lomba").upsert(submissionData, {
+    // FIXED: Hanya update submitted_at jika ini submission pertama kali
+    // atau jika belum ada submitted_at sebelumnya
+    const { data: existingSubmission } = await supabase
+      .from("submissions_lomba")
+      .select("submitted_at")
+      .eq("registration_id", approvedRegistration.id)
+      .single()
+
+    if (!existingSubmission || !existingSubmission.submitted_at) {
+      submissionData.submitted_at = now
+    }
+
+    const { error } = await supabase
+      .from("submissions_lomba")
+      .upsert(submissionData, {
         onConflict: "registration_id",
       })
 
-      if (error) {
-        throw error
-      }
-
-      setUploadProgress(100)
-
-      if (submissionStage === "preliminary") {
-        showSuccessToast("Berkas penyisihan berhasil disubmit. Tunggu pengumuman hasil penyisihan!")
-      } else {
-        showSuccessToast("Berkas final berhasil disubmit. Terima kasih atas partisipasi Anda!")
-      }
-
-      setPreliminaryFile(null)
-      setFinalFile(null)
-
-      if (submissionStage === "preliminary") {
-        setPreliminaryUrl(newPreliminaryUrl)
-      } else {
-        setFinalUrl(newFinalUrl)
-      }
-    } catch (error) {
-      console.error("Error submitting files:", error)
-      showErrorToast(error, "Submit Submission")
-    } finally {
-      setIsSubmitting(false)
-      setIsUploading(false)
-      setUploadProgress(0)
+    if (error) {
+      throw error
     }
-  }, [approvedRegistration, preliminaryFile, finalFile, submissionStage, preliminaryUrl, finalUrl])
+
+    setUploadProgress(100)
+
+    if (submissionStage === "preliminary") {
+      showSuccessToast("Berkas penyisihan berhasil disubmit. Tunggu pengumuman hasil penyisihan!")
+    } else {
+      showSuccessToast("Berkas final berhasil disubmit. Terima kasih atas partisipasi Anda!")
+    }
+
+    setPreliminaryFile(null)
+    setFinalFile(null)
+
+    if (submissionStage === "preliminary") {
+      setPreliminaryUrl(newPreliminaryUrl)
+    } else {
+      setFinalUrl(newFinalUrl)
+    }
+
+    // Update submittedAt state
+    if (submissionData.submitted_at) {
+      setSubmittedAt(submissionData.submitted_at)
+    }
+
+  } catch (error) {
+    console.error("Error submitting files:", error)
+    showErrorToast(error, "Submit Submission")
+  } finally {
+    setIsSubmitting(false)
+    setIsUploading(false)
+    setUploadProgress(0)
+  }
+}, [approvedRegistration, preliminaryFile, finalFile, submissionStage, preliminaryUrl, finalUrl])
 
   if (profileLoading || registrationsLoading || isFetching) {
     return (
@@ -285,8 +308,8 @@ export default function SubmisiBerakasPage() {
             {preliminaryUrl && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <p className="text-sm text-green-800">
-                  ✓ Berkas penyisihan sudah disubmit pada{" "}
-                  {new Date(submissionStage === "preliminary" ? preliminaryUrl : "").toLocaleDateString("id-ID")}
+                  ✓ Berkas penyisihan sudah disubmit
+                  {/* Removed: invalid date display */}
                 </p>
               </div>
             )}
