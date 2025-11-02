@@ -238,10 +238,46 @@ export default function SubmisiBerakasPage() {
   }, [approvedRegistration])
 
   const uploadFile = async (file: File, folder: string): Promise<string> => {
+    // Sanitize dan truncate filename untuk menghindari error "public_id too long"
+    const sanitizeFilename = (filename: string): string => {
+      // Ambil extension
+      const lastDotIndex = filename.lastIndexOf('.')
+      const ext = lastDotIndex > -1 ? filename.slice(lastDotIndex) : ''
+      const nameWithoutExt = lastDotIndex > -1 ? filename.slice(0, lastDotIndex) : filename
+      
+      // Bersihkan nama file dari karakter spesial
+      let cleanName = nameWithoutExt
+        .replace(/[^a-zA-Z0-9_-]/g, '_') // Ganti karakter spesial dengan underscore
+        .replace(/_+/g, '_') // Ganti multiple underscore dengan single
+        .replace(/^_+|_+$/g, '') // Hapus underscore di awal/akhir
+      
+      // Hitung panjang folder path untuk menentukan max length nama file
+      // Format: "scc-submissions/preliminary/nama_sekolah/" ≈ 60-80 chars
+      // Cloudinary limit: 255 chars total
+      // Kita sisakan 255 - 100 (buffer untuk folder) = 155 chars untuk filename
+      const folderLength = folder.length
+      const maxTotalLength = 255
+      const safetyBuffer = 10 // Buffer untuk ekstensi dan separator
+      const maxNameLength = Math.min(50, maxTotalLength - folderLength - safetyBuffer - ext.length)
+      
+      if (cleanName.length > maxNameLength) {
+        cleanName = cleanName.slice(0, maxNameLength)
+      }
+      
+      // Pastikan tidak kosong
+      if (!cleanName) {
+        cleanName = 'file_' + Date.now()
+      }
+      
+      return cleanName + ext
+    }
+    
+    const sanitizedFilename = sanitizeFilename(file.name)
+    
     const formData = new FormData()
     formData.append("file", file)
     formData.append("folder", folder)
-    formData.append("filename", file.name)
+    formData.append("filename", sanitizedFilename)
 
     const response = await fetch("/api/upload", {
       method: "POST",
@@ -457,7 +493,7 @@ export default function SubmisiBerakasPage() {
             <li>
               Format nama file PDF: <br />
               <code className="bg-gray-200 px-2 py-1 rounded text-xs">
-                NamaLengkapAnggota1_NamaLengkapAnggota2_NamaLengkapAnggota3_Universitas_Abstrak_JudulAbstrak.pdf
+                NamaLengkapAnggota1_NamaLengkapAnggota2_NamaLengkapAnggota3_Universitas_Abstrak.pdf
               </code>
             </li>
             <li>Jika abstrak mengandung kutipan, <strong>wajib sertakan referensi sumber</strong> untuk menghindari plagiasi.</li>
