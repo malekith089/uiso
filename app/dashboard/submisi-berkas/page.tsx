@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, Star } from "lucide-react"
 
 interface SubmissionData {
   registration_id: string
@@ -60,6 +60,8 @@ export default function SubmisiBerakasPage() {
 
   const [deadlinePreliminary, setDeadlinePreliminary] = useState<string | null>(null)
   const [deadlineFinal, setDeadlineFinal] = useState<string | null>(null)
+  const [finalSubmissionStartDate, setFinalSubmissionStartDate] = useState<string | null>(null)
+  const [isFinalSubmissionOpen, setIsFinalSubmissionOpen] = useState(false)
   const [isDeadlineExpired, setIsDeadlineExpired] = useState(false)
   const sanitizeForPath = (str: string | null | undefined): string => {
   if (!str) {
@@ -93,7 +95,7 @@ export default function SubmisiBerakasPage() {
         const supabase = createClient()
         const { data, error } = await supabase
           .from("competitions")
-          .select("deadline_preliminary, deadline_final")
+          .select("deadline_preliminary, deadline_final, start_time_final")
           .eq("code", competitionCode)
           .single()
 
@@ -104,6 +106,7 @@ export default function SubmisiBerakasPage() {
         if (data) {
           setDeadlinePreliminary(data.deadline_preliminary)
           setDeadlineFinal(data.deadline_final)
+          setFinalSubmissionStartDate(data.start_time_final)
         }
       } catch (error) {
         console.error("Error fetching deadlines:", error)
@@ -112,6 +115,26 @@ export default function SubmisiBerakasPage() {
 
     fetchDeadlines()
   }, [approvedRegistration])
+
+  // [BARU] useEffect untuk mengecek apakah submisi final sudah dibuka
+  useEffect(() => {
+    // Hanya jalankan jika kita di tahap final DAN sudah ada data tanggal mulai
+    if (submissionStage === "final" && finalSubmissionStartDate) {
+      const checkTime = () => {
+        const now = new Date()
+        const startTime = new Date(finalSubmissionStartDate)
+        setIsFinalSubmissionOpen(now >= startTime)
+      }
+
+      checkTime() // Cek saat komponen dimuat
+      const interval = setInterval(checkTime, 1000 * 60) // Cek ulang setiap menit
+
+      return () => clearInterval(interval) // Bersihkan interval
+    } else if (submissionStage !== "final") {
+      // Jika bukan stage final, anggap saja "dibuka" agar tidak memblokir logic lain
+      setIsFinalSubmissionOpen(true)
+    }
+  }, [submissionStage, finalSubmissionStartDate])
 
   useEffect(() => {
     if (!approvedRegistration || approvedRegistration.competitions.code !== "SCC") {
@@ -466,62 +489,47 @@ export default function SubmisiBerakasPage() {
 
   return (
     <>
-        <Card className="mb-6 border-blue-200 bg-blue-50/50">
-      <CardHeader>
-        <CardTitle className="text-blue-900">📋 Mekanisme Penyisihan SCC</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="prose prose-sm max-w-none text-gray-700">
-          <h4 className="font-semibold text-gray-900 mb-2">Ketentuan Pengumpulan:</h4>
-          <ol className="list-decimal list-inside space-y-2 ml-2">
-            <li>Setiap peserta harus membuat dan mengirimkan <strong>abstrak solusi</strong> sesuai tema dan subtema yang dipilih.</li>
-            <li>
-              Periode pengumpulan: <strong>20 Oktober 2025 - 3 November 2025</strong>
-              <br />
-              <span className="text-red-600 font-medium">⚠️ Terdapat pengurangan nilai 1% per 1 jam keterlambatan.</span>
-            </li>
-            <li>
-              Format abstrak solusi:
-              <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
-                <li>Ukuran Kertas: A4</li>
-                <li>Font: Times New Roman, 12pt</li>
-                <li>Spasi: 1,5pt, Paragraf: Justify</li>
-                <li>Margin: Atas 3cm, Bawah 3cm, Kanan 3cm, Kiri 4cm</li>
-                <li>Daftar pustaka: Spasi 1,15, format APA Style</li>
-              </ul>
-            </li>
-            <li>
-              Format nama file PDF: <br />
-              <code className="bg-gray-200 px-2 py-1 rounded text-xs">
-                NamaLengkapAnggota1_NamaLengkapAnggota2_NamaLengkapAnggota3_Universitas_Abstrak.pdf
-              </code>
-            </li>
-            <li>Jika abstrak mengandung kutipan, <strong>wajib sertakan referensi sumber</strong> untuk menghindari plagiasi.</li>
-          </ol>
-        </div>
-        
-        <div className="pt-2">
-          <Button
-            variant="outline"
-            className="w-full border-blue-300 text-blue-700 hover:bg-blue-100"
-            onClick={() => window.open("https://bit.ly/FormatAbstrakSCCUISO2025", "_blank")}
-          >
-            📄 Format Abstrak (Template)
-          </Button>
-          <p className="text-xs text-gray-600 text-center">
-            Jika tidak dapat mengakses dari tombol, buka melalui link:{" "}
-            <a 
-              href="https://bit.ly/FormatAbstrakSCCUISO2025" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline font-medium"
-            >
-              bit.ly/FormatAbstrakSCCUISO2025
-            </a>
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+    {isQualifiedForFinal === true && (
+            <Card className="mb-6 border-green-500 bg-green-50 shadow-lg relative overflow-hidden">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-xl font-bold text-green-800">Selamat! Anda Lolos ke Final!</CardTitle>
+                    <Star className="h-8 w-8 text-green-400 rotate-12" /> {/* Ikon bintang */}
+                </CardHeader>
+                <CardContent>
+                    <p className="text-base text-green-700 leading-relaxed">
+                        Tim Anda telah berhasil melewati babak penyisihan dan maju ke babak final SCC.
+                    </p>
+                    {/* Opsi tambahan: Background gradasi ringan atau pattern */}
+                    <div className="absolute inset-0 pointer-events-none opacity-10" style={{ 
+                        background: 'radial-gradient(circle at top right, var(--tw-green-200), transparent 50%)'
+                    }}></div>
+                </CardContent>
+            </Card>
+            )}
+
+  {/* [ENHANCED] Notifikasi "Tidak Lolos" */}
+            {isQualifiedForFinal === false && (
+                <Card className="mb-6 border-red-500 bg-red-50 shadow-lg relative overflow-hidden">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-xl font-bold text-red-800">Status Babak Penyisihan</CardTitle>
+                        {/* Pastikan AlertCircle sudah di-import dari lucide-react */}
+                        <AlertCircle className="h-8 w-8 text-red-400" />
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-base text-red-700 leading-relaxed">
+                            Mohon maaf, tim Anda belum berhasil melanjutkan ke babak final SCC untuk tahun ini.
+                        </p>
+                        <p className="text-base text-red-800 font-semibold mt-3">
+                            Terima kasih atas kerja keras dan partisipasi Anda. Jangan berkecil hati dan teruslah berinovasi. Sampai jumpa di UISO tahun depan!
+                        </p>
+                        {/* Efek visual gradasi opsional */}
+                        <div className="absolute inset-0 pointer-events-none opacity-10" style={{ 
+                            background: 'radial-gradient(circle at top right, var(--tw-red-200), transparent 50%)'
+                        }}></div>
+                    </CardContent>
+                </Card>
+            )}
+
     <Card>
       <CardHeader>
         <CardTitle>
@@ -540,16 +548,7 @@ export default function SubmisiBerakasPage() {
 
         {submissionStage === "preliminary" && (
   <>
-  {isQualifiedForFinal === false && (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-sm text-red-800 font-medium">
-          Mohon maaf, Anda belum lolos ke babak final.
-        </p>
-        <p className="text-sm text-red-700 mt-1">
-          Terima kasih atas partisipasi Anda. Jangan berkecil hati dan sampai jumpa di UISO tahun depan!
-        </p>
-      </div>
-    )}
+
     {preliminaryUrl && submittedAt && (
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
         <p className="text-sm text-green-800">
@@ -578,11 +577,26 @@ export default function SubmisiBerakasPage() {
 
         {submissionStage === "final" && (
           <>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-800">
-                ✓ Selamat! Anda telah lolos ke babak final. Silakan upload berkas final Anda.
-              </p>
-            </div>
+
+            {/* [BARU] Tampilkan pesan ini jika submisi final belum dibuka */}
+            {finalSubmissionStartDate && !isFinalSubmissionOpen && (
+              <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mt-4">
+                <p className="text-sm text-yellow-800 font-medium">
+                  Submisi Babak Final Belum Dibuka
+                </p>
+                <p className="text-sm text-yellow-700 mt-1">
+                  Anda dapat mulai mengunggah berkas pada:{" "}
+                  {new Date(finalSubmissionStartDate).toLocaleDateString("id-ID", {
+                    day: 'numeric',
+                    month: 'long', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+            )}
+
             <FileUploadDeferred
               label="Berkas Babak Final"
               description="Format: PDF, Maksimal: 5MB"
@@ -660,7 +674,10 @@ export default function SubmisiBerakasPage() {
                 
                 // 5. Untuk stage final: disable jika BELUM pilih file ATAU SUDAH submit (jika Anda ingin final juga tidak bisa resubmit)
                 // Jika final BOLEH resubmit, hapus '|| !!finalUrl' di bawah ini
-                (submissionStage === "final" && (!finalFile || !!finalUrl))
+                (submissionStage === "final" && (!finalFile || !!finalUrl)) ||
+
+                // [BARU] 6. Untuk stage final: disable jika periode submit BELUM DIBUKA
+                (submissionStage === "final" && !isFinalSubmissionOpen)
               }
               className="w-full"
             >
