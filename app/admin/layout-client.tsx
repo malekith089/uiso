@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LayoutDashboard, FileCheck, Menu, LogOut, Shield, Settings } from "lucide-react"
+import { LayoutDashboard, FileCheck, Menu, LogOut, Shield, Settings, FileText } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
@@ -31,10 +31,15 @@ const sidebarItems = [
     icon: Settings,
   },
   {
-    title: "Manajemen Submisi",
+    title: "Submissions SCC",
     href: "/admin/manajemen-submisi",
     icon: FileCheck,
   },
+  {
+  title: "Submissions EGK", // TAMBAHKAN INI
+  href: "/admin/submissions-egk",
+  icon: FileText,
+}
   // {
   //   title: "Manajemen Akun",
   //   href: "/admin/peserta",
