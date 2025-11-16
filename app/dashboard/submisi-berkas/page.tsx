@@ -39,6 +39,10 @@ export default function SubmisiBerakasPage() {
   const { data: userProfile, isLoading: profileLoading } = useUserProfile()
   const { data: registrations = [], isLoading: registrationsLoading } = useRegistrations()
 
+  // Tambahkan state ini setelah state yang sudah ada
+  const [isEGKFinalist, setIsEGKFinalist] = useState(false)
+  const [egkSubmissionStage, setEgkSubmissionStage] = useState<"preliminary" | "final" | null>(null)
+
   const [isAgreed, setIsAgreed] = useState(false)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -116,25 +120,94 @@ export default function SubmisiBerakasPage() {
     fetchDeadlines()
   }, [approvedRegistration])
 
-  // [BARU] useEffect untuk mengecek apakah submisi final sudah dibuka
-  useEffect(() => {
-    // Hanya jalankan jika kita di tahap final DAN sudah ada data tanggal mulai
-    if (submissionStage === "final" && finalSubmissionStartDate) {
-      const checkTime = () => {
-        const now = new Date()
-        const startTime = new Date(finalSubmissionStartDate)
-        setIsFinalSubmissionOpen(now >= startTime)
+  // Tambahkan useEffect ini setelah useEffect fetchDeadlines yang kedua
+useEffect(() => {
+  if (!approvedRegistration || approvedRegistration.competitions.code !== "EGK") {
+    return
+  }
+
+  // Cek apakah user adalah finalist EGK
+  if (approvedRegistration.is_finalist === true) {
+    setIsEGKFinalist(true)
+    setEgkSubmissionStage("final") // Langsung set ke final stage
+  } else {
+    setIsEGKFinalist(false)
+    setEgkSubmissionStage("preliminary") // Masih di preliminary (redirect ke Google Form)
+  }
+}, [approvedRegistration])
+
+// Tambahkan useEffect ini setelah useEffect yang baru saja ditambahkan
+useEffect(() => {
+  if (!approvedRegistration || approvedRegistration.competitions.code !== "EGK" || !isEGKFinalist) {
+    return
+  }
+
+  const fetchExistingEGKSubmission = async () => {
+    try {
+      setIsFetching(true)
+      const supabase = createClient()
+
+      const { data, error } = await supabase
+        .from("submissions_lomba")
+        .select("*")
+        .eq("registration_id", approvedRegistration.id)
+        .single()
+
+      if (error && error.code !== "PGRST116") {
+        throw error
       }
 
-      checkTime() // Cek saat komponen dimuat
-      const interval = setInterval(checkTime, 1000 * 60) // Cek ulang setiap menit
-
-      return () => clearInterval(interval) // Bersihkan interval
-    } else if (submissionStage !== "final") {
-      // Jika bukan stage final, anggap saja "dibuka" agar tidak memblokir logic lain
-      setIsFinalSubmissionOpen(true)
+      if (data) {
+        setFinalUrl(data.final_file_url || "")
+        setSubmittedAt(data.submitted_at)
+      }
+    } catch (error) {
+      console.error("Error fetching existing EGK submission:", error)
+      showErrorToast(error, "Fetch EGK Submission")
+    } finally {
+      setIsFetching(false)
     }
-  }, [submissionStage, finalSubmissionStartDate])
+  }
+
+  fetchExistingEGKSubmission()
+}, [approvedRegistration, isEGKFinalist])
+
+  // [BARU] useEffect untuk mengecek apakah submisi final sudah dibuka
+ useEffect(() => {
+  // Check untuk SCC Final
+  if (submissionStage === "final" && finalSubmissionStartDate) {
+    const checkTime = () => {
+      const now = new Date()
+      const startTime = new Date(finalSubmissionStartDate)
+      setIsFinalSubmissionOpen(now >= startTime)
+    }
+
+    checkTime()
+    const interval = setInterval(checkTime, 1000 * 60)
+
+    return () => clearInterval(interval)
+  } 
+  // Jika bukan final stage SCC, set true (agar tidak block preliminary)
+  else if (submissionStage === "preliminary" || submissionStage === null) {
+    setIsFinalSubmissionOpen(true)
+  }
+}, [submissionStage, finalSubmissionStartDate])
+
+  useEffect(() => {
+  // Check untuk EGK Finalist apakah final submission sudah dibuka
+  if (isEGKFinalist && finalSubmissionStartDate) {
+    const checkTime = () => {
+      const now = new Date()
+      const startTime = new Date(finalSubmissionStartDate)
+      setIsFinalSubmissionOpen(now >= startTime)
+    }
+
+    checkTime() // Cek saat komponen dimuat
+    const interval = setInterval(checkTime, 1000 * 60) // Cek ulang setiap menit
+
+    return () => clearInterval(interval) // Bersihkan interval
+  }
+}, [isEGKFinalist, finalSubmissionStartDate])
 
   useEffect(() => {
     if (!approvedRegistration || approvedRegistration.competitions.code !== "SCC") {
@@ -167,40 +240,43 @@ export default function SubmisiBerakasPage() {
   }, [approvedRegistration])
 
   useEffect(() => {
-    const fetchSubmissionHistory = async () => {
-        if (!approvedRegistration) return; 
+  const fetchSubmissionHistory = async () => {
+    if (!approvedRegistration) return
 
-        setIsLoadingHistory(true);
-        try {
-            const supabase = createClient();
-            // Catatan: Logic submit Anda saat ini menggunakan 'upsert'
-            // yang berarti hanya akan ada 1 baris data (status terakhir).
-            // Kode ini akan tetap menampilkannya dalam tabel.
-            const { data, error } = await supabase
-                .from('submissions_lomba')
-                .select(`
-                    submitted_at,
-                    updated_at,
-                    preliminary_file_url,
-                    final_file_url,
-                    is_qualified_for_final
-                `)
-                .eq('registration_id', approvedRegistration.id)
-                .order('updated_at', { ascending: false }); // Urutkan berdasarkan update terbaru
+    // Skip jika bukan SCC atau EGK
+    const competitionCode = approvedRegistration.competitions.code
+    if (competitionCode !== "SCC" && competitionCode !== "EGK") return
 
-            if (error) throw error;
-            setSubmissionHistory(data || []); // data akan berupa array [ { ... } ]
+    setIsLoadingHistory(true)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+      .from('submissions_lomba')
+      .select(`
+        submitted_at,
+        updated_at,
+        preliminary_file_url,
+        final_file_url,
+        preliminary_filename,
+        final_filename,
+        is_qualified_for_final
+      `)
+      .eq('registration_id', approvedRegistration.id)
+      .order('updated_at', { ascending: false })
 
-        } catch (error: any) {
-            showErrorToast(error, "Gagal memuat history submisi");
-            setSubmissionHistory([]); 
-        } finally {
-            setIsLoadingHistory(false);
-        }
-    };
+      if (error) throw error
+      setSubmissionHistory(data || [])
 
-    fetchSubmissionHistory();
-  }, [approvedRegistration, isSubmitting]);
+    } catch (error: any) {
+      showErrorToast(error, "Gagal memuat history submisi")
+      setSubmissionHistory([])
+    } finally {
+      setIsLoadingHistory(false)
+    }
+  }
+
+  fetchSubmissionHistory()
+}, [approvedRegistration, isSubmitting]);
 
   const getCurrentDeadline = () => {
     if (submissionStage === "preliminary" && deadlinePreliminary) {
@@ -261,60 +337,61 @@ export default function SubmisiBerakasPage() {
   }, [approvedRegistration])
 
   const uploadFile = async (file: File, folder: string): Promise<string> => {
-    // Sanitize dan truncate filename untuk menghindari error "public_id too long"
-    const sanitizeFilename = (filename: string): string => {
-      // Ambil extension
-      const lastDotIndex = filename.lastIndexOf('.')
-      const ext = lastDotIndex > -1 ? filename.slice(lastDotIndex) : ''
-      const nameWithoutExt = lastDotIndex > -1 ? filename.slice(0, lastDotIndex) : filename
-      
-      // Bersihkan nama file dari karakter spesial
-      let cleanName = nameWithoutExt
-        .replace(/[^a-zA-Z0-9_-]/g, '_') // Ganti karakter spesial dengan underscore
-        .replace(/_+/g, '_') // Ganti multiple underscore dengan single
-        .replace(/^_+|_+$/g, '') // Hapus underscore di awal/akhir
-      
-      // Hitung panjang folder path untuk menentukan max length nama file
-      // Format: "scc-submissions/preliminary/nama_sekolah/" ≈ 60-80 chars
-      // Cloudinary limit: 255 chars total
-      // Kita sisakan 255 - 100 (buffer untuk folder) = 155 chars untuk filename
-      const folderLength = folder.length
-      const maxTotalLength = 255
-      const safetyBuffer = 10 // Buffer untuk ekstensi dan separator
-      const maxNameLength = Math.min(50, maxTotalLength - folderLength - safetyBuffer - ext.length)
-      
-      if (cleanName.length > maxNameLength) {
-        cleanName = cleanName.slice(0, maxNameLength)
-      }
-      
-      // Pastikan tidak kosong
-      if (!cleanName) {
-        cleanName = 'file_' + Date.now()
-      }
-      
-      return cleanName + ext
+  // Sanitize dan truncate filename untuk menghindari error "public_id too long"
+  const sanitizeFilename = (filename: string): string => {
+    // Ambil extension
+    const lastDotIndex = filename.lastIndexOf('.')
+    const ext = lastDotIndex > -1 ? filename.slice(lastDotIndex) : ''
+    const nameWithoutExt = lastDotIndex > -1 ? filename.slice(0, lastDotIndex) : filename
+    
+    // Bersihkan nama file dari karakter spesial
+    let cleanName = nameWithoutExt
+      .replace(/[^a-zA-Z0-9_-]/g, '_') // Ganti karakter spesial dengan underscore
+      .replace(/_+/g, '_') // Ganti multiple underscore dengan single
+      .replace(/^_+|_+$/g, '') // Hapus underscore di awal/akhir
+    
+    // Hitung panjang folder path untuk menentukan max length nama file
+    const folderLength = folder.length
+    const maxTotalLength = 255
+    const safetyBuffer = 10 // Buffer untuk ekstensi dan separator
+    const maxNameLength = Math.min(50, maxTotalLength - folderLength - safetyBuffer - ext.length)
+    
+    if (cleanName.length > maxNameLength) {
+      cleanName = cleanName.slice(0, maxNameLength)
     }
     
-    const sanitizedFilename = sanitizeFilename(file.name)
-    
-    const formData = new FormData()
-    formData.append("file", file)
-    formData.append("folder", folder)
-    formData.append("filename", sanitizedFilename)
-
-    const response = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.error || "Upload failed")
+    // Pastikan tidak kosong
+    if (!cleanName) {
+      cleanName = 'file_' + Date.now()
     }
-
-    const data = await response.json()
-    return data.secure_url || data.url
+    
+    // CRITICAL: Kembalikan dengan ekstensi untuk preserve file type
+    return cleanName + ext
   }
+  
+  const sanitizedFilename = sanitizeFilename(file.name)
+  
+  const formData = new FormData()
+  formData.append("file", file)
+  formData.append("folder", folder)
+  formData.append("filename", sanitizedFilename)
+  
+  // TAMBAHAN: Kirim file type untuk handling di server
+  formData.append("fileType", file.type)
+
+  const response = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json()
+    throw new Error(errorData.error || "Upload failed")
+  }
+
+  const data = await response.json()
+  return data.secure_url || data.url
+}
 
   const handleSubmitSCC = useCallback(async () => {
   if (!approvedRegistration) return
@@ -337,17 +414,22 @@ export default function SubmisiBerakasPage() {
     let newPreliminaryUrl = preliminaryUrl
     let newFinalUrl = finalUrl
 
+    let preliminaryFilename = ""
+    let finalFilename = ""
+
     if (submissionStage === "preliminary" && preliminaryFile) {
       setUploadProgress(50)
-        const fullPath = `scc-submissions/preliminary/${customFolderName}`
-        newPreliminaryUrl = await uploadFile(preliminaryFile, fullPath)
-      }
+      const fullPath = `scc-submissions/preliminary/${customFolderName}`
+      newPreliminaryUrl = await uploadFile(preliminaryFile, fullPath)
+      preliminaryFilename = preliminaryFile.name // Simpan original filename
+    }
 
     if (submissionStage === "final" && finalFile) {
       setUploadProgress(50)
-        const fullPath = `scc-submissions/final/${customFolderName}`
-        newFinalUrl = await uploadFile(finalFile, fullPath)
-      }
+      const fullPath = `scc-submissions/final/${customFolderName}`
+      newFinalUrl = await uploadFile(finalFile, fullPath)
+      finalFilename = finalFile.name // Simpan original filename
+    }
 
     setUploadProgress(75)
 
@@ -360,6 +442,14 @@ export default function SubmisiBerakasPage() {
       preliminary_file_url: newPreliminaryUrl,
       final_file_url: newFinalUrl,
       updated_at: now,
+    }
+
+    // Simpan filename jika ada
+    if (preliminaryFilename) {
+      submissionData.preliminary_filename = preliminaryFilename
+    }
+    if (finalFilename) {
+      submissionData.final_filename = finalFilename
     }
 
     // FIXED: Hanya update submitted_at jika ini submission pertama kali
@@ -417,6 +507,85 @@ export default function SubmisiBerakasPage() {
   }
 }, [approvedRegistration, userProfile, preliminaryFile, finalFile, submissionStage, preliminaryUrl, finalUrl])
 
+// Tambahkan function ini setelah handleSubmitSCC
+const handleSubmitEGK = useCallback(async () => {
+  if (!approvedRegistration || !isEGKFinalist || !finalFile) return
+
+  try {
+    setIsSubmitting(true)
+    setIsUploading(true)
+    setUploadProgress(0)
+
+    // 1. Ambil data nama dan sekolah
+    const leaderName = userProfile.full_name
+    const schoolName = userProfile.school_institution
+
+    // 2. Buat nama folder kustom yang sudah bersih
+    const customFolderName = `${sanitizeForPath(leaderName)}_${sanitizeForPath(schoolName)}`
+
+    setUploadProgress(50)
+
+    // 3. Upload file final
+    const fullPath = `egk-submissions/final/${customFolderName}`
+    const newFinalUrl = await uploadFile(finalFile, fullPath)
+
+    setUploadProgress(75)
+
+    const supabase = createClient()
+    const now = new Date().toISOString()
+    
+    // 4. Buat object submissionData
+    const submissionData: any = {
+      registration_id: approvedRegistration.id,
+      final_file_url: newFinalUrl,
+      updated_at: now,
+    }
+
+    // 5. Cek apakah sudah ada submission sebelumnya
+    const { data: existingSubmission } = await supabase
+      .from("submissions_lomba")
+      .select("submitted_at")
+      .eq("registration_id", approvedRegistration.id)
+      .single()
+
+    if (!existingSubmission || !existingSubmission.submitted_at) {
+      submissionData.submitted_at = now
+    }
+
+    // 6. Upsert ke database
+    const { error } = await supabase
+      .from("submissions_lomba")
+      .upsert(submissionData, {
+        onConflict: "registration_id",
+      })
+
+    if (error) {
+      throw error
+    }
+
+    setUploadProgress(100)
+
+    showSuccessToast("Berkas final EGK berhasil disubmit. Terima kasih atas partisipasi Anda!")
+
+    setFinalFile(null)
+    setIsAgreed(false) 
+    setFinalUrl(newFinalUrl)
+
+    // Update submittedAt state
+    if (submissionData.submitted_at) {
+      setSubmittedAt(submissionData.submitted_at)
+    }
+
+  } catch (error) {
+    console.error("Error submitting EGK final file:", error)
+    showErrorToast(error, "Submit EGK Final")
+  } finally {
+    setIsSubmitting(false)
+    setIsUploading(false)
+    setUploadProgress(0)
+  }
+}, [approvedRegistration, userProfile, finalFile, isEGKFinalist])
+
   if (profileLoading || registrationsLoading || isFetching) {
     return (
       <div className="space-y-4">
@@ -442,47 +611,296 @@ export default function SubmisiBerakasPage() {
   }
 
   if (approvedRegistration.competitions.code === "EGK") {
+    // Jika bukan finalist, tampilkan redirect ke Google Form
+    if (!isEGKFinalist || egkSubmissionStage === "preliminary") {
+      return (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Submisi Lomba EGK - Babak Penyisihan</CardTitle>
+              <CardDescription>Submisi babak penyisihan untuk lomba EGK dilakukan melalui Google Form.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Deadline Card untuk EGK */}
+              {deadlinePreliminary && (
+                <DeadlineCountdown 
+                  deadline={deadlinePreliminary} 
+                  onExpired={() => setIsDeadlineExpired(true)} 
+                />
+              )}
+              
+              <p className="text-sm text-gray-600">
+                Silakan klik tombol di bawah untuk mengakses formulir submisi EGK babak penyisihan.
+              </p>
+            </CardContent>
+            <CardFooter className="flex-col gap-2">
+              <Button 
+                onClick={() => window.open("https://docs.google.com/forms/d/e/1FAIpQLSclmdo0HYENeEQUqX5n0-u2G1mfBQpbfisBJw4R4wE-de9PPg/viewform", "_blank")} 
+                className="w-full"
+                disabled={isDeadlineExpired}
+              >
+                {isDeadlineExpired ? "Deadline Telah Berakhir" : "Menuju Google Form"}
+              </Button>
+              <p className="text-xs text-gray-600 text-center w-full">
+                Jika tidak dapat mengakses dari tombol, buka melalui link:{" "}
+                <a 
+                  href="https://bit.ly/SubmisiEGKUISO2025" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline font-medium"
+                >
+                  bit.ly/SubmisiEGKUISO2025
+                </a>
+              </p>
+            </CardFooter>
+          </Card>
+        </>
+      )
+    }
+
+    // Jika finalist, tampilkan form upload file
+    // Tambahkan code ini setelah section Google Form redirect
     return (
       <>
+        {/* Notifikasi Lolos Final */}
+        <Card className="mb-6 border-green-500 bg-green-50 shadow-lg relative overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xl font-bold text-green-800">
+              Selamat! Anda Lolos ke Final EGK!
+            </CardTitle>
+            <Star className="h-8 w-8 text-green-400 rotate-12" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-base text-green-700 leading-relaxed">
+              Tim Anda telah berhasil melewati babak penyisihan dan maju ke babak final EGK.
+              Silakan upload berkas final Anda di bawah ini.
+            </p>
+            <div className="absolute inset-0 pointer-events-none opacity-10" style={{ 
+              background: 'radial-gradient(circle at top right, var(--tw-green-200), transparent 50%)'
+            }}></div>
+          </CardContent>
+        </Card>
+
+        {/* Form Upload File Final EGK */}
         <Card>
           <CardHeader>
-            <CardTitle>Submisi Lomba EGK</CardTitle>
-            <CardDescription>Submisi untuk lomba EGK dilakukan melalui Google Form.</CardDescription>
+            <CardTitle>Submisi Berkas Babak Final EGK</CardTitle>
+            <CardDescription>
+              Unggah berkas final untuk lomba EGK. File akan diupload saat Anda menekan tombol Submit.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Deadline Card untuk EGK */}
-            {deadlinePreliminary && (
+          <CardContent className="space-y-6">
+            {/* Deadline Countdown */}
+            {deadlineFinal && (
               <DeadlineCountdown 
-                deadline={deadlinePreliminary} 
+                deadline={deadlineFinal} 
                 onExpired={() => setIsDeadlineExpired(true)} 
               />
             )}
-            
-            <p className="text-sm text-gray-600">
-              Silakan klik tombol di bawah untuk mengakses formulir submisi EGK.
-            </p>
+
+            {/* Pesan jika belum dibuka */}
+            {finalSubmissionStartDate && !isFinalSubmissionOpen && (
+              <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
+                <p className="text-sm text-yellow-800 font-medium">
+                  Submisi Babak Final Belum Dibuka
+                </p>
+                <p className="text-sm text-yellow-700 mt-1">
+                  Anda dapat mulai mengunggah berkas pada:{" "}
+                  {new Date(finalSubmissionStartDate).toLocaleDateString("id-ID", {
+                    day: 'numeric',
+                    month: 'long', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+            )}
+
+            {/* Status Sudah Submit */}
+            {finalUrl && submittedAt && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm text-green-800">
+                  ✓ Berkas final sudah disubmit pada{" "}
+                  {new Date(submittedAt).toLocaleDateString("id-ID", {
+                    day: 'numeric',
+                    month: 'long', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+            )}
+
+            {/* File Upload Component */}
+            <FileUploadDeferred
+              label="Berkas Babak Final"
+              description="Format: PPT/PPTX, Maksimal: 15MB"
+              accept=".ppt, .pptx"
+              maxSize={15}
+              onFileSelect={setFinalFile}
+              selectedFile={finalFile}
+              required={!finalUrl}
+            />
+
+            {/* Checkbox Pernyataan */}
+            <div className="border-t pt-4">
+              <div className="flex items-start space-x-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
+                <Checkbox 
+                  id="agreement-egk" 
+                  checked={isAgreed}
+                  onCheckedChange={(checked) => setIsAgreed(checked === true)}
+                  className="mt-1"
+                />
+                <div className="flex-1">
+                  <Label 
+                    htmlFor="agreement-egk" 
+                    className="text-sm font-medium leading-relaxed cursor-pointer"
+                  >
+                    Pernyataan Orisinalitas dan Persetujuan <span className="text-red-600">*</span>
+                  </Label>
+                  <ul className="mt-2 space-y-1 text-sm text-gray-700">
+                    <li className="flex items-start">
+                      <span className="mr-2">•</span>
+                      <span>Saya menyatakan bahwa data yang saya isi benar dan dapat dipertanggungjawabkan.</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-2">•</span>
+                      <span>Saya bersedia mengikuti ketentuan yang berlaku sebagai peserta UISO 2025.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Upload Progress */}
+            {isUploading && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  <span>Mengupload file... {uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
           </CardContent>
           <CardFooter>
-            <Button 
-              onClick={() => window.open("https://docs.google.com/forms/d/e/1FAIpQLSclmdo0HYENeEQUqX5n0-u2G1mfBQpbfisBJw4R4wE-de9PPg/viewform", "_blank")} 
-              className="w-full"
-              disabled={isDeadlineExpired}
-            >
-              {isDeadlineExpired ? "Deadline Telah Berakhir" : "Menuju Google Form"}
-            </Button>
-            <p className="text-xs text-gray-600 text-center w-full">
-              Jika tidak dapat mengakses dari tombol, buka melalui link:{" "}
-              <a 
-                href="https://bit.ly/SubmisiEGKUISO2025" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline font-medium"
-              >
-                bit.ly/SubmisiEGKUISO2025
-              </a>
-            </p>
+            <CardFooter>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  disabled={
+                    isSubmitting ||
+                    isDeadlineExpired ||
+                    !isAgreed ||
+                    !finalFile ||
+                    !!finalUrl ||
+                    !!(finalSubmissionStartDate && !isFinalSubmissionOpen)
+                  }
+                  className="w-full"
+                >
+                  {isDeadlineExpired ? "Deadline Telah Berakhir" : isSubmitting ? "Mengirim..." : "Submit Berkas"}
+                </Button>
+              </AlertDialogTrigger>
+              
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="text-yellow-500" />
+                      Konfirmasi Submisi Berkas Final EGK
+                    </div>
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="pt-2">
+                    Pastikan file yang Anda unggah sudah benar.
+                    <br /><br />
+                    <strong>
+                      Submisi berkas babak final tidak dapat diubah (resubmit)
+                      setelah Anda menekan tombol "Ya, Submit Sekarang".
+                    </strong>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Batal, Cek Lagi</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleSubmitEGK}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Mengirim..." : "Ya, Submit Sekarang"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardFooter>
           </CardFooter>
         </Card>
+        {/* TAMBAHKAN INI: History Submission untuk EGK */}
+    {submissionHistory.length > 0 && (
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>History Submisi Anda</CardTitle>
+          <CardDescription>
+            Riwayat pengumpulan berkas untuk {approvedRegistration?.competitions.name}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingHistory ? (
+            <p>Memuat history...</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tanggal Submit</TableHead>
+                  <TableHead>Berkas Final</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {submissionHistory.map((submission, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="min-w-[220px]">
+                      {submission.submitted_at ? (
+                        <div className="text-sm">
+                          {format(new Date(submission.submitted_at), 'dd MMM yyyy HH:mm', { locale: id })}
+                        </div>
+                      ) : (
+                        submission.updated_at ? (
+                          <div className="text-sm">
+                            {format(new Date(submission.updated_at), 'dd MMM yyyy HH:mm', { locale: id })}
+                          </div>
+                        ) : '-'
+                      )}
+                    </TableCell>
+                      <TableCell>
+                        {submission.final_file_url ? (
+                          <a 
+                            href={submission.final_file_url} 
+                            download={submission.final_filename || 'final.pptx'}
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-blue-600 underline"
+                          >
+                            Download
+                          </a>
+                        ) : '-'}
+                      </TableCell>
+                    <TableCell>
+                      <Badge variant="default">Finalist</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    )}
       </>
     )
   }
@@ -766,15 +1184,29 @@ export default function SubmisiBerakasPage() {
                                     {/* 3. Fallback jika tidak ada data sama sekali */}
                                     {!submission.submitted_at && !submission.final_file_url ? '-' : null}
                                 </TableCell>
-                                <TableCell>
-                                    {submission.preliminary_file_url ? (
-                                        <a href={submission.preliminary_file_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Lihat</a>
-                                    ) : '-'}
+                               <TableCell>
+                                  {submission.preliminary_file_url ? (
+                                    <a 
+                                      href={submission.preliminary_file_url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer" 
+                                      className="text-blue-600 underline"
+                                    >
+                                      Lihat
+                                    </a>
+                                  ) : '-'}
                                 </TableCell>
                                 <TableCell>
-                                    {submission.final_file_url ? (
-                                        <a href={submission.final_file_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Lihat</a>
-                                    ) : '-'}
+                                  {submission.final_file_url ? (
+                                    <a 
+                                      href={submission.final_file_url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer" 
+                                      className="text-blue-600 underline"
+                                    >
+                                      Lihat
+                                    </a>
+                                  ) : '-'}
                                 </TableCell>
                                  <TableCell>
                                     {submission.preliminary_file_url ? ( // Tampilkan status hanya jika penyisihan sudah submit

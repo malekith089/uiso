@@ -123,7 +123,7 @@ export default function ClientPage({ submissions }: ClientPageProps) {
     <div className="space-y-6">
       <div className="flex justify-between items-center"> {/* Tambah flex container */}
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Manajemen Submisi Lomba</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Manajemen Submisi Lomba SCC</h1>
           <p className="text-gray-600 mt-2">Kelola submisi berkas dan tentukan peserta yang lolos ke final</p>
         </div>
         {/* Tombol Export */}
