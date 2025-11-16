@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Calendar, CheckCircle, Clock, AlertTriangle } from "lucide-react"
+import { Calendar, CheckCircle, Clock, AlertTriangle, Trophy } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { showErrorToast } from "@/lib/error-handler"
@@ -17,11 +17,13 @@ interface Registration {
   status: string
   created_at: string
   selected_subject_id: string | null
+  is_finalist?: boolean
   competitions: {
     name: string
     code: string
     participant_type: string
     competition_date: string
+    finalist_message?: string | null
   }
 }
 
@@ -99,6 +101,13 @@ export default function DashboardPage() {
       (reg: Registration) => reg.competitions.code === "OSP" && !reg.selected_subject_id
     )
   }, [registrations])
+
+  // BARU: Filter registrasi yang lolos final
+  const finalistRegistrations = useMemo(() => {
+    return registrations.filter(
+      (reg: Registration) => reg.is_finalist === true
+    )
+  }, [registrations])
   
   const getStatusBadge = useCallback((status: string) => {
     switch (status) {
@@ -147,6 +156,12 @@ export default function DashboardPage() {
       
       {/* Profile Completeness Card */}
       {!isProfileComplete && <ProfileIncompleteCard />}
+
+      {/* BARU: Finalist Card */}
+      {/* Card ini hanya akan muncul jika 'finalistRegistrations' tidak kosong */}
+      {finalistRegistrations.length > 0 && (
+        <FinalistCard finalistRegistrations={finalistRegistrations} />
+      )}
 
       {/* OSP Selection Card */}
       {needsOspSelection && <OspSelectionCard />}
@@ -320,4 +335,83 @@ function OspSelectionCard() {
       </CardContent>
     </Card>
   )
+}
+
+// BARU: Komponen terpisah untuk card finalis (Versi Modifikasi)
+function FinalistCard({ finalistRegistrations }: { finalistRegistrations: Registration[] }) {
+  
+  // BARU: Helper function untuk mapping link GForm.
+  // Anda bisa letakkan ini di luar komponen jika mau.
+  const getFinalistGformLink = (competitionCode: string): string | null => {
+    const links: Record<string, string> = {
+      'OSP': 'https://ristek.link/KonfirmasiFinalisOSPUISO2025',
+      'SCC': 'https://ristek.link/KonfirmasiFinalisSCCUISO2025',
+      'EGK': 'https://ristek.link/KonfirmasiFinalisEGKUISO2025',
+    };
+    // Mengembalikan link atau null jika kode tidak ditemukan
+    return links[competitionCode] || null;
+  };
+
+  return (
+    <Card className="border-green-500 bg-green-50">
+      <CardHeader className="flex flex-row items-start gap-4 space-y-0 p-4">
+        <Trophy className="h-6 w-6 text-green-700 flex-shrink-0" />
+        <div className="flex-1">
+          <CardTitle className="text-base text-green-800">
+            Selamat, Anda Lolos ke Tahap Final!
+          </CardTitle>
+          <CardDescription className="text-green-700 mt-1">
+            Anda telah lolos ke tahap final untuk kompetisi berikut.
+            {/* MODIFIKASI: Tambahan instruksi */}
+            <strong className="text-green-800 font-semibold">
+              {' '}Harap segera lakukan konfirmasi ulang
+            </strong>
+            {' '}untuk melanjutkan ke tahap final.
+          </CardDescription>
+          
+          {/* MODIFIKASI: Mengganti <ul> dengan <div> untuk layout yang lebih baik */}
+          <div className="mt-4 space-y-4">
+            {finalistRegistrations.map((reg) => {
+              // BARU: Ambil link GForm untuk kompetisi ini
+              const gformLink = getFinalistGformLink(reg.competitions.code);
+
+              return (
+                <div 
+                  key={reg.id} 
+                  className="p-4 border border-green-200 rounded-lg bg-white/60"
+                >
+                  <strong className="font-semibold text-green-900">
+                    {reg.competitions.name}
+                  </strong>
+                  
+                  {/* Menampilkan pesan kustom untuk finalis */}
+                  {/* Memastikan kita mengambil pesan dari data 'competitions' yang di-join */}
+                  {reg.competitions.finalist_message ? (
+                    <p className="text-xs italic text-green-800 mt-1">
+                      {reg.competitions.finalist_message}
+                    </p>
+                  ) : (
+                    <p className="text-xs italic text-green-800 mt-1">
+                      Informasi detail akan segera diumumkan.
+                    </p>
+                  )}
+
+                  {/* BARU: Tombol GForm (hanya muncul jika link ada) */}
+                  {gformLink && (
+                    <Button
+                      size="sm"
+                      className="mt-3 bg-green-600 hover:bg-green-700 text-xs h-8 px-3 py-1.5"
+                      onClick={() => window.open(gformLink, '_blank')}
+                    >
+                      Konfirmasi Ulang Final di Sini
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </CardHeader>
+    </Card>
+  );
 }
