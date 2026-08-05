@@ -7,11 +7,36 @@ const sessionCache = new Map<string, { user: any; expires: number }>()
 const CACHE_DURATION = 5 * 60 * 1000 // 5 menit
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
-
   const url = request.nextUrl.clone()
   const pathname = request.nextUrl.pathname
-  
+
+  // --- 1. LOGIKA MAINTENANCE MODE DITAMBAHKAN DI SINI ---
+  const isMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true'
+
+  // Jika maintenance aktif dan bukan file statis/sistem Next.js
+  if (
+    isMaintenance &&
+    !pathname.startsWith('/_next') &&
+    !pathname.startsWith('/api') &&
+    !pathname.includes('.') &&
+    pathname !== '/under-construction'
+  ) {
+    // Pengecualian: Izinkan akses ke halaman admin, dashboard, dan auth
+    // (Ubah atau hapus kondisi ini jika Anda ingin mengunci total 100% website)
+    const isBypassedRoute =
+      pathname.startsWith("/admin") ||
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/auth")
+
+    if (!isBypassedRoute) {
+      // Tampilkan halaman under construction untuk public route
+      return NextResponse.rewrite(new URL('/under-construction', request.url))
+    }
+  }
+  // ------------------------------------------------------
+
+  let supabaseResponse = NextResponse.next({ request })
+
   // Definisikan route types
   const isProtectedRoute =
     pathname.startsWith("/admin") ||
