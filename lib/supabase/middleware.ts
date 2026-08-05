@@ -25,9 +25,7 @@ export async function updateSession(request: NextRequest) {
     // (Ubah atau hapus kondisi ini jika Anda ingin mengunci total 100% website)
     const isBypassedRoute =
       pathname.startsWith("/admin") ||
-      pathname.startsWith("/dashboard") ||
       pathname.startsWith("/login") ||
-      pathname.startsWith("/register") ||
       pathname.startsWith("/auth")
 
     if (!isBypassedRoute) {
